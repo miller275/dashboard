@@ -1,0 +1,22 @@
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.toolbar .input { min-width: 220px; }
+.toolbar .select { min-width: 160px; }
+.toolbar .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
+.toolbar .btn-icon img { width: 16px; height: 16px; }
+
+.view-home .grid { margin-top: 8px; }
+.view-favorites .grid { margin-top: 8px; }
+.view-coin .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+
+.card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 800px) { .card-row { grid-template-columns: 1fr; } }
+
+.table {
+  width: 100%; border-collapse: collapse; font-size: 14px;
+}
+.table th, .table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+}
+.table th { text-align: left; color: var(--muted); }
+.link { color: var(--accent); text-decoration: none; }
+.link:hover { text-decoration: underline; }
