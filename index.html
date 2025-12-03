@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CryptoWatch - Отслеживание криптовалют</title>
+
+    <!-- Стили -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Chart.js для графиков BTC/ETH и страниц монет -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Основной скрипт -->
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">₿</div>
+                    Crypto<span>Watch</span>
+                </a>
+
+                <nav>
+                    <ul>
+                        <li><a href="#crypto-section">Криптовалюты</a></li>
+                        <li><a href="#charts-section">Графики цен</a></li>
+                        <li><a href="#news-section">Новости</a></li>
+                        <li><a href="#">Портфель</a></li>
+                        <li><a href="#">Продукты</a></li>
+                    </ul>
+                </nav>
+
+                <div class="search-bar">
+                    <span>🔍</span>
+                    <input id="globalSearch" type="text" placeholder="Поиск по монетам..." />
+                </div>
+
+                <div class="user-actions">
+                    <div class="theme-toggle" id="themeToggle">🌙</div>
+                    <div class="notifications">🔔</div>
+                    <button class="login-btn">Войти</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="container">
+        <!-- Герой-секция -->
+        <section class="hero">
+            <h1>Отслеживайте криптовалюты в реальном времени</h1>
+            <p>
+                Получайте актуальные данные о ценах, рыночной капитализации и объемах торгов
+                для ведущих криптовалют.
+            </p>
+            <div class="cta-buttons">
+                <button class="cta-btn">Начать сейчас</button>
+                <button class="cta-btn secondary">Узнать больше</button>
+            </div>
+        </section>
+
+        <!-- Статистика рынка -->
+        <section class="market-stats" id="market-stats">
+            <div class="stat-card">
+                <h3>Рыночная капитализация</h3>
+                <div class="stat-value" id="global-market-cap">—</div>
+                <div class="stat-change" id="global-market-cap-change">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Объем за 24ч</h3>
+                <div class="stat-value" id="global-volume">—</div>
+                <div class="stat-change" id="global-volume-change">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Доминирование BTC</h3>
+                <div class="stat-value" id="btc-dominance">—</div>
+                <div class="stat-change" id="btc-dominance-change">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Индекс страха и жадности</h3>
+                <div class="stat-value" id="fear-greed">—</div>
+                <div class="stat-change positive">Крипторынок</div>
+            </div>
+        </section>
+
+        <!-- Таблица криптовалют -->
+        <section class="crypto-section" id="crypto-section">
+            <div class="section-title">
+                <h2>Топ криптовалют по рыночной капитализации</h2>
+                <div>Показано: <span id="shown-count">0</span> из <span id="total-count">0</span></div>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="btceth">BTC + ETH</button>
+                <button class="filter-btn" data-filter="gainers">Рост за 24ч</button>
+                <button class="filter-btn" data-filter="losers">Падение за 24ч</button>
+            </div>
+
+            <div class="crypto-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Название</th>
+                            <th>Цена</th>
+                            <th>Изменение 24ч</th>
+                            <th>Объем 24ч</th>
+                            <th>Рыночная капитализация</th>
+                            <th>Последние 7 дней</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="crypto-table-body">
+                        <!-- Заполняется через JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-note">
+                Данные предоставлены CoinGecko API. Бесконечная прокрутка: листайте вниз, чтобы подгружать ещё монеты.
+            </div>
+        </section>
+
+        <!-- Графики -->
+        <section class="charts-section" id="charts-section">
+            <div class="section-title">
+                <h2>Графики цен</h2>
+            </div>
+
+            <!-- BTC -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        Bitcoin (BTC)
+                        <span class="chart-subtitle" id="btc-price-label">—</span>
+                    </div>
+                    <div class="chart-options" id="btc-range-buttons">
+                        <button class="chart-option active" data-range="1">24ч</button>
+                        <button class="chart-option" data-range="7">7д</button>
+                        <button class="chart-option" data-range="30">1м</button>
+                        <button class="chart-option" data-range="90">3м</button>
+                        <button class="chart-option" data-range="365">1г</button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="btcChart"></canvas>
+                    <div class="chart-loading" id="btcChartLoading">Загрузка графика...</div>
+                    <div class="chart-error" id="btcChartError"></div>
+                </div>
+            </div>
+
+            <!-- ETH -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        Ethereum (ETH)
+                        <span class="chart-subtitle" id="eth-price-label">—</span>
+                    </div>
+                    <div class="chart-options" id="eth-range-buttons">
+                        <button class="chart-option active" data-range="1">24ч</button>
+                        <button class="chart-option" data-range="7">7д</button>
+                        <button class="chart-option" data-range="30">1м</button>
+                        <button class="chart-option" data-range="90">3м</button>
+                        <button class="chart-option" data-range="365">1г</button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="ethChart"></canvas>
+                    <div class="chart-loading" id="ethChartLoading">Загрузка графика...</div>
+                    <div class="chart-error" id="ethChartError"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Новости -->
+        <section class="news-section" id="news-section">
+            <div class="section-title">
+                <h2>Последние новости о криптовалютах</h2>
+                <a href="#" id="newsSourceLink" target="_blank" rel="noopener noreferrer">Источник новостей</a>
+            </div>
+
+            <div id="news-status" class="news-status"></div>
+
+            <div class="news-grid" id="news-grid">
+                <!-- Карточки новостей добавляются через JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Подвал -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>CryptoWatch</h3>
+                    <p>Платформа для отслеживания криптовалютных рынков в реальном времени.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-icon">f</a>
+                        <a href="#" class="social-icon">t</a>
+                        <a href="#" class="social-icon">in</a>
+                        <a href="#" class="social-icon">ig</a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h3>Продукты</h3>
+                    <ul>
+                        <li><a href="#">Биржи</a></li>
+                        <li><a href="#">Портфель</a></li>
+                        <li><a href="#">NFT</a></li>
+                        <li><a href="#">API</a></li>
+                        <li><a href="#">Мобильное приложение</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h3>Компания</h3>
+                    <ul>
+                        <li><a href="#">О нас</a></li>
+                        <li><a href="#">Карьера</a></li>
+                        <li><a href="#">Блог</a></li>
+                        <li><a href="#">Пресса</a></li>
+                        <li><a href="#">Контакты</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h3>Поддержка</h3>
+                    <ul>
+                        <li><a href="#">Помощь</a></li>
+                        <li><a href="#">Учебные материалы</a></li>
+                        <li><a href="#">Сообщество</a></li>
+                        <li><a href="#">Статус системы</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2025 CryptoWatch. Все права защищены. Данные: CoinGecko API.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

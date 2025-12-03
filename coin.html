@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CryptoWatch - Страница монеты</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="script.js"></script>
+</head>
+<body>
+<header>
+    <div class="container">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">₿</div>
+                Crypto<span>Watch</span>
+            </a>
+
+            <nav>
+                <ul>
+                    <li><a href="index.html#crypto-section">Криптовалюты</a></li>
+                    <li><a href="index.html#charts-section">Графики цен</a></li>
+                    <li><a href="index.html#news-section">Новости</a></li>
+                    <li><a href="#">Портфель</a></li>
+                    <li><a href="#">Продукты</a></li>
+                </ul>
+            </nav>
+
+            <div class="search-bar">
+                <span>🔍</span>
+                <input id="globalSearch" type="text" placeholder="Поиск по монетам..." />
+            </div>
+
+            <div class="user-actions">
+                <div class="theme-toggle" id="themeToggle">🌙</div>
+                <div class="notifications">🔔</div>
+                <button class="login-btn">Войти</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container" id="coin-page-root">
+    <section class="coin-breadcrumb">
+        <a href="index.html#crypto-section">← Назад к списку монет</a>
+    </section>
+
+    <section class="coin-hero">
+        <div class="coin-hero-main">
+            <div class="coin-hero-header">
+                <img id="coin-logo" class="coin-logo" src="" alt="" />
+                <div>
+                    <h1 id="coin-name">Монета</h1>
+                    <div class="coin-hero-subtitle">
+                        <span id="coin-symbol" class="chip chip-secondary">SYM</span>
+                        <span id="coin-rank" class="chip chip-outline">#</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="coin-hero-price-block">
+                <div class="coin-price-line">
+                    <span class="coin-price" id="coin-price">—</span>
+                    <span class="price-change" id="coin-change-24h">—</span>
+                </div>
+                <div class="coin-hero-meta">
+                    <span>Рыночная капитализация: <strong id="coin-market-cap">—</strong></span>
+                    <span>Объем (24ч): <strong id="coin-volume">—</strong></span>
+                    <span>В обращении: <strong id="coin-supply">—</strong></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="charts-section coin-chart-section">
+        <div class="section-title">
+            <h2>График цены</h2>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <span id="coin-chart-title">График</span>
+                    <span class="chart-subtitle" id="coin-price-label">—</span>
+                </div>
+                <div class="chart-options" id="coin-range-buttons">
+                    <button class="chart-option active" data-range="1">24ч</button>
+                    <button class="chart-option" data-range="7">7д</button>
+                    <button class="chart-option" data-range="30">1м</button>
+                    <button class="chart-option" data-range="90">3м</button>
+                    <button class="chart-option" data-range="365">1г</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="coinChart"></canvas>
+                <div class="chart-loading" id="coinChartLoading">Загрузка графика...</div>
+                <div class="chart-error" id="coinChartError"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="coin-description-section">
+        <h2>Описание проекта</h2>
+        <p id="coin-description">
+            Загрузка описания...
+        </p>
+    </section>
+</main>
+
+<footer>
+    <div class="container">
+        <div class="footer-bottom">
+            <p>&copy; 2025 CryptoWatch. Все права защищены. Данные: CoinGecko API.</p>
+        </div>
+    </div>
+</footer>
+</body>
+</html>
