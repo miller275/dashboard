@@ -1,8 +1,0 @@
-header, .panel, .modal, footer { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
-table { width: 100%; border-collapse: collapse; }
-thead th { background: var(--table-even); color: var(--muted); padding: 10px; cursor: pointer; }
-tbody td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
-tbody tr:hover { background: rgba(76,201,240,0.08); }
-.price-up { color: var(--green); }
-.price-down { color: var(--red); }
-.badge { display:inline-block; padding:2px 6px; border-radius:6px; font-size:11px; border:1px solid var(--border); color:var(--muted); }
