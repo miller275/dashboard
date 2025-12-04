@@ -1,966 +1,1273 @@
-"use strict";
+/* =========================================
+   CryptoHub — Market & Charts
+   - CoinGecko API integration
+   - TradingView widgets
+   - Search, sort, pagination, watchlist, heatmap
+   - Theme + language toggles
+   - Modal details + side chart panel
+   - Ready for GitHub Pages (no server needed)
+   ========================================= */
 
-// =====================
-// CONFIG
-// =====================
+/* -----------------------------------------
+   Section 0. App Constants
+   ----------------------------------------- */
 
-const PAPRIKA_BASE = "https://api.coinpaprika.com/v1";
-
-// News API (опционально, нужно вставить свой ключ)
-const NEWS_API_KEY = "YOUR_NEWS_API_KEY_HERE";
-const NEWS_API_URL = `https://newsdata.io/api/1/news?apikey=${NEWS_API_KEY}&q=crypto&language=ru,en&category=business,technology`;
-
-// Pagination / infinite scroll
-const COINS_PER_PAGE = 20;
-
-// =====================
-// I18N
-// =====================
-
-const I18N = {
-  ru: {
-    nav_cryptos: "Криптовалюты",
-    nav_charts: "Графики",
-    nav_news: "Новости",
-    nav_portfolio: "Портфель",
-    nav_products: "Продукты",
-    search_placeholder: "Поиск по монетам...",
-    hero_title: "Отслеживайте криптовалюты в реальном времени",
-    hero_subtitle:
-      "Получайте актуальные данные о ценах, капитализации и объемах торгов для ведущих криптовалют.",
-    hero_cta_primary: "Начать сейчас",
-    hero_cta_secondary: "Узнать больше",
-    stat_market_cap: "Рыночная капитализация",
-    stat_volume_24h: "Объём за 24ч",
-    stat_btc_dominance: "Доминирование BTC",
-    stat_market_info: "Рынок",
-    section_cryptos_title: "Топ криптовалют",
-    section_cryptos_shown_prefix: "Показано",
-    section_cryptos_of: "из",
-    filter_all: "Все",
-    filter_btceth: "BTC + ETH",
-    filter_gainers: "Рост за 24ч",
-    filter_losers: "Падение за 24ч",
-    th_rank: "#",
-    th_name: "Название",
-    th_price: "Цена",
-    th_change_24h: "Изменение 24ч",
-    th_volume_24h: "Объём 24ч",
-    th_market_cap: "Капитализация",
-    th_7d: "7д",
-    table_note:
-      "Данные предоставлены CoinPaprika API. Листайте вниз, чтобы загрузить больше монет.",
-    section_charts_title: "Графики цен",
-    chart_btc_title: "Bitcoin (BTC)",
-    chart_eth_title: "Ethereum (ETH)",
-    chart_range_1d: "24ч",
-    chart_range_7d: "7д",
-    chart_range_30d: "1м",
-    chart_range_90d: "3м",
-    chart_range_365d: "1г",
-    chart_loading: "Загрузка графика...",
-    section_news_title: "Новости криптовалют",
-    footer_about:
-      "Платформа для отслеживания криптовалютных рынков в реальном времени.",
-    footer_products: "Продукты",
-    footer_exchanges: "Биржи",
-    footer_portfolio: "Портфель",
-    footer_nft: "NFT",
-    footer_company: "Компания",
-    footer_about_link: "О нас",
-    footer_blog: "Блог",
-    footer_data_source: "Данные: CoinPaprika API, новости: внешний API.",
-    breadcrumb_back: "← Назад к списку монет",
-    coin_market_cap: "Капитализация:",
-    coin_volume_24h: "Объём (24ч):",
-    coin_supply: "В обращении:",
-    coin_chart_title: "График цены",
-    coin_description_title: "Описание проекта",
-    news_status_need_key:
-      "Чтобы загрузить реальные новости, добавь API ключ в script.js в переменную NEWS_API_KEY.",
-    news_status_loading: "Загружаем новости...",
-    news_status_empty: "Новости не найдены.",
-    news_status_error:
-      "Не удалось загрузить новости. Проверь API ключ или попробуй позже.",
-    news_read_more: "Читать полностью →",
+const APP = {
+  version: '1.0.0',
+  name: 'CryptoHub',
+  author: 'Games & Copilot',
+  // Default options
+  opts: {
+    currency: 'usd',
+    perPage: 50,
+    sort: 'market_cap_desc',
+    page: 1,
+    lang: 'ru',
+    theme: (typeof document !== 'undefined' ? document.documentElement.dataset.theme : 'dark') || 'dark',
   },
-  en: {
-    nav_cryptos: "Cryptos",
-    nav_charts: "Charts",
-    nav_news: "News",
-    nav_portfolio: "Portfolio",
-    nav_products: "Products",
-    search_placeholder: "Search coins...",
-    hero_title: "Track cryptocurrencies in real time",
-    hero_subtitle:
-      "Get up‑to‑date prices, market caps and trading volumes for leading cryptocurrencies.",
-    hero_cta_primary: "Get started",
-    hero_cta_secondary: "Learn more",
-    stat_market_cap: "Market cap",
-    stat_volume_24h: "24h volume",
-    stat_btc_dominance: "BTC dominance",
-    stat_market_info: "Market",
-    section_cryptos_title: "Top cryptocurrencies",
-    section_cryptos_shown_prefix: "Shown",
-    section_cryptos_of: "of",
-    filter_all: "All",
-    filter_btceth: "BTC + ETH",
-    filter_gainers: "24h gainers",
-    filter_losers: "24h losers",
-    th_rank: "#",
-    th_name: "Name",
-    th_price: "Price",
-    th_change_24h: "24h change",
-    th_volume_24h: "24h volume",
-    th_market_cap: "Market cap",
-    th_7d: "7d",
-    table_note:
-      "Data from CoinPaprika API. Scroll down to load more coins.",
-    section_charts_title: "Price charts",
-    chart_btc_title: "Bitcoin (BTC)",
-    chart_eth_title: "Ethereum (ETH)",
-    chart_range_1d: "24h",
-    chart_range_7d: "7d",
-    chart_range_30d: "1m",
-    chart_range_90d: "3m",
-    chart_range_365d: "1y",
-    chart_loading: "Loading chart...",
-    section_news_title: "Crypto news",
-    footer_about:
-      "A platform for tracking cryptocurrency markets in real time.",
-    footer_products: "Products",
-    footer_exchanges: "Exchanges",
-    footer_portfolio: "Portfolio",
-    footer_nft: "NFT",
-    footer_company: "Company",
-    footer_about_link: "About",
-    footer_blog: "Blog",
-    footer_data_source: "Data: CoinPaprika API, news: external API.",
-    breadcrumb_back: "← Back to list",
-    coin_market_cap: "Market cap:",
-    coin_volume_24h: "Volume (24h):",
-    coin_supply: "Circulating supply:",
-    coin_chart_title: "Price chart",
-    coin_description_title: "Project description",
-    news_status_need_key:
-      "To load real news, add an API key into NEWS_API_KEY in script.js.",
-    news_status_loading: "Loading news...",
-    news_status_empty: "No news found.",
-    news_status_error:
-      "Failed to load news. Check API key or try again later.",
-    news_read_more: "Read full article →",
+  // Endpoints
+  api: {
+    base: 'https://api.coingecko.com/api/v3',
+    // Market list
+    markets: '/coins/markets',
+    // Single coin
+    coin: (id) => `/coins/${encodeURIComponent(id)}`,
+    // Global
+    global: '/global',
+    // Market chart (prices)
+    marketChart: (id, vs, days) => `/coins/${encodeURIComponent(id)}/market_chart?vs_currency=${encodeURIComponent(vs)}&days=${encodeURIComponent(days)}&interval=daily`,
+    // Simple price
+    simplePrice: '/simple/price',
+  },
+  // DOM refs
+  dom: {},
+  // State
+  state: {
+    coins: [],
+    total: 0,
+    page: 1,
+    perPage: 50,
+    sort: 'market_cap_desc',
+    currency: 'usd',
+    query: '',
+    lang: 'ru',
+    theme: 'dark',
+    watchlist: new Set(),
+    selectedCoin: null,
+    global: null,
+  },
+  // i18n dictionary
+  i18n: {
+    ru: {
+      market: 'Рынок',
+      watchlist: 'Избранное',
+      heatmap: 'Теплокарта',
+      global: 'Глобально',
+      searchPlaceholder: 'Поиск монеты...',
+      clear: 'Очистить',
+      currency: 'Валюта',
+      perPage: 'На странице',
+      sort: 'Сортировка',
+      refresh: 'Обновить',
+      lastUpdated: 'Обновлено',
+      price: 'Цена',
+      change24h: 'Изм. 24ч',
+      marketCap: 'Капитализация',
+      volume24h: 'Объем 24ч',
+      circulating: 'Оборот',
+      line: 'Линия',
+      actions: 'Действия',
+      addFav: 'В избранное',
+      removeFav: 'Убрать',
+      details: 'Детали',
+      chart: 'Чарт',
+      loading: 'Загрузка...',
+      emptyWatchlist: 'Избранное пусто. Добавьте монеты с рынка.',
+      globalMcap: 'Глобальная капитализация',
+      globalVolume: 'Общий объем 24ч',
+      btcDominance: 'Доминантность BTC',
+      marketTrend: 'Тренд рынка',
+      tvMini: 'TradingView Mini',
+      tvFull: 'TradingView Full',
+      info: 'Инфо',
+      description: 'Описание',
+      links: 'Ссылки',
+      marketData: 'Рыночные данные',
+      errorFetch: 'Ошибка загрузки данных. Попробуйте позже.',
+      page: 'Страница',
+      open: 'Открыть',
+      close: 'Закрыть',
+      ru: 'RU',
+      en: 'EN',
+      growth: 'рост',
+      drop: 'падение',
+      topVolume: 'Топ по объему',
+      dominanceTracker: 'Трекер доминантности',
+      globalMetrics: 'Глобальные метрики',
+    },
+    en: {
+      market: 'Market',
+      watchlist: 'Watchlist',
+      heatmap: 'Heatmap',
+      global: 'Global',
+      searchPlaceholder: 'Search coin...',
+      clear: 'Clear',
+      currency: 'Currency',
+      perPage: 'Per page',
+      sort: 'Sort',
+      refresh: 'Refresh',
+      lastUpdated: 'Updated',
+      price: 'Price',
+      change24h: 'Change 24h',
+      marketCap: 'Market cap',
+      volume24h: 'Volume 24h',
+      circulating: 'Circulating',
+      line: 'Spark',
+      actions: 'Actions',
+      addFav: 'Add fav',
+      removeFav: 'Remove',
+      details: 'Details',
+      chart: 'Chart',
+      loading: 'Loading...',
+      emptyWatchlist: 'Watchlist is empty. Add coins from market.',
+      globalMcap: 'Global market cap',
+      globalVolume: 'Global volume 24h',
+      btcDominance: 'BTC dominance',
+      marketTrend: 'Market trend',
+      tvMini: 'TradingView Mini',
+      tvFull: 'TradingView Full',
+      info: 'Info',
+      description: 'Description',
+      links: 'Links',
+      marketData: 'Market data',
+      errorFetch: 'Failed to fetch. Try later.',
+      page: 'Page',
+      open: 'Open',
+      close: 'Close',
+      ru: 'RU',
+      en: 'EN',
+      growth: 'growth',
+      drop: 'drop',
+      topVolume: 'Top by volume',
+      dominanceTracker: 'Dominance tracker',
+      globalMetrics: 'Global metrics',
+    }
+  },
+  // Symbol mapping for TradingView (simple guess)
+  tvSymbols: {
+    // Try to map major coins to TradingView symbols
+    bitcoin: 'BINANCE:BTCUSDT',
+    ethereum: 'BINANCE:ETHUSDT',
+    tether: 'CRYPTOCAP:USDT',
+    binancecoin: 'BINANCE:BNBUSDT',
+    ripple: 'BINANCE:XRPUSDT',
+    cardano: 'BINANCE:ADAUSDT',
+    dogecoin: 'BINANCE:DOGEUSDT',
+    solana: 'BINANCE:SOLUSDT',
+    tron: 'BINANCE:TRXUSDT',
+    polkadot: 'BINANCE:DOTUSDT',
+    litecoin: 'BINANCE:LTCUSDT',
+    shiba-inu: 'BINANCE:SHIBUSDT',
+    avalanche: 'BINANCE:AVAXUSDT',
+    chainlink: 'BINANCE:LINKUSDT',
+    polygon: 'BINANCE:MATICUSDT',
+    uniswap: 'BINANCE:UNIUSDT',
+    cosmos: 'BINANCE:ATOMUSDT',
+    toncoin: 'BYBIT:TONUSDT',
+    near: 'BINANCE:NEARUSDT',
+    aptos: 'BINANCE:APTUSDT',
+    arbitrum: 'BINANCE:ARBUSDT',
+    pepe: 'BINANCE:PEPEUSDT',
+    // fallback added at runtime if unknown
   },
 };
 
-let currentLang = "ru";
+/* -----------------------------------------
+   Section 1. Utilities
+   ----------------------------------------- */
 
-// =====================
-// State
-// =====================
-
-let coinsData = [];
-let filteredCoins = [];
-let currentPage = 1;
-let isLoadingMore = false;
-let currentFilter = "all";
-let searchQuery = "";
-
-let btcChartInstance = null;
-let ethChartInstance = null;
-let coinChartInstance = null;
-
-// =====================
-// Helpers
-// =====================
-
-function getQueryParam(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
-}
-
-function formatNumber(num) {
-  if (num == null || isNaN(num)) return "—";
-  if (num >= 1_000_000_000_000) return (num / 1_000_000_000_000).toFixed(2) + "T";
-  if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(2) + "B";
-  if (num >= 1_000_000) return (num / 1_000_000).toFixed(2) + "M";
-  if (num >= 1_000) return (num / 1_000).toFixed(2) + "K";
-  return num.toFixed(2);
-}
-
-function formatPrice(price) {
-  if (price == null || isNaN(price)) return "—";
-  if (price < 0.01) return "$" + price.toFixed(8);
-  if (price < 1) return "$" + price.toFixed(4);
-  return (
-    "$" +
-    price.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  );
-}
-
-function formatPercent(num) {
-  if (num == null || isNaN(num)) return "—";
-  const sign = num > 0 ? "+" : "";
-  return sign + num.toFixed(2) + "%";
-}
-
-function stripHtml(html) {
-  if (!html) return "";
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return (div.textContent || div.innerText || "").trim();
-}
-
-// =====================
-// I18N functions
-// =====================
-
-function applyI18n() {
-  const dict = I18N[currentLang] || I18N.ru;
-
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    const text = dict[key];
-    if (text) el.textContent = text;
-  });
-
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-    const key = el.getAttribute("data-i18n-placeholder");
-    const text = dict[key];
-    if (text) el.setAttribute("placeholder", text);
-  });
-
-  const labelEl = document.getElementById("currentLangLabel");
-  if (labelEl) labelEl.textContent = currentLang.toUpperCase();
-}
-
-function initLanguageSwitcher() {
-  const toggle = document.getElementById("langToggle");
-  const menu = document.getElementById("langMenu");
-  if (!toggle || !menu) return;
-
-  toggle.addEventListener("click", () => {
-    menu.classList.toggle("open");
-  });
-
-  menu.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-lang]");
-    if (!btn) return;
-    const lang = btn.getAttribute("data-lang");
-    currentLang = lang === "en" ? "en" : "ru";
-    localStorage.setItem("cw_lang", currentLang);
-    menu.classList.remove("open");
-    applyI18n();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target) && !toggle.contains(e.target)) {
-      menu.classList.remove("open");
+const fmt = {
+  /** Format currency */
+  money(n, currency = APP.state.currency) {
+    const locales = APP.state.lang === 'ru' ? 'ru-RU' : 'en-US';
+    try {
+      return new Intl.NumberFormat(locales, { style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 6 }).format(n ?? 0);
+    } catch (e) {
+      // Fallback if currency unsupported
+      return `${n?.toLocaleString?.(locales) ?? n} ${currency.toUpperCase()}`;
     }
-  });
-}
-
-// =====================
-// Theme
-// =====================
-
-function initThemeToggle() {
-  const btn = document.getElementById("themeToggle");
-  if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    document.body.classList.toggle("light-theme");
-  });
-}
-
-// =====================
-// Global stats
-// =====================
-
-async function fetchGlobalStats() {
-  // У CoinPaprika нет /global как у CoinGecko. Сымитируем на основе тикеров.
-  try {
-    const res = await fetch(PAPRIKA_BASE + "/global");
-    if (!res.ok) throw new Error("no global");
-    const data = await res.json();
-
-    const dict = {
-      market_cap_usd: data.market_cap_usd,
-      volume_24h_usd: data.volume_24h_usd,
-      bitcoin_dominance_percentage: data.bitcoin_dominance_percentage,
+  },
+  /** Format compact number */
+  num(n) {
+    const locales = APP.state.lang === 'ru' ? 'ru-RU' : 'en-US';
+    return new Intl.NumberFormat(locales, { notation: 'compact', maximumFractionDigits: 2 }).format(n ?? 0);
+  },
+  /** Format percent with sign */
+  perc(n) {
+    if (n === null || n === undefined) return '—';
+    const s = n >= 0 ? '+' : '';
+    return `${s}${n.toFixed(2)}%`;
+  },
+  /** Date/time */
+  time(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleString(APP.state.lang === 'ru' ? 'ru-RU' : 'en-US');
+  },
+  /** HTML escape */
+  esc(s) {
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  },
+  /** Clamp */
+  clamp(n, min, max) { return Math.max(min, Math.min(max, n)); },
+  /** Random int */
+  rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; },
+  /** Debounce */
+  debounce(fn, ms = 300) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), ms);
     };
+  },
+};
 
-    const capEl = document.getElementById("global-market-cap");
-    const volEl = document.getElementById("global-volume");
-    const btcDomEl = document.getElementById("btc-dominance");
+/* -----------------------------------------
+   Section 2. Persistent storage
+   ----------------------------------------- */
 
-    if (capEl && dict.market_cap_usd != null)
-      capEl.textContent = "$" + formatNumber(dict.market_cap_usd);
-    if (volEl && dict.volume_24h_usd != null)
-      volEl.textContent = "$" + formatNumber(dict.volume_24h_usd);
-    if (btcDomEl && dict.bitcoin_dominance_percentage != null)
-      btcDomEl.textContent = dict.bitcoin_dominance_percentage.toFixed(2) + "%";
-  } catch (e) {
-    // Если /global нет, просто тихо игнорируем
-    console.warn("Global stats not available", e);
+const storage = {
+  get(key, def) {
+    try {
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : def;
+    } catch (e) {
+      return def;
+    }
+  },
+  set(key, val) {
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {}
+  },
+  getSet(key) {
+    const arr = storage.get(key, []);
+    return new Set(arr);
+  },
+  setSet(key, set) {
+    storage.set(key, Array.from(set || []));
   }
+};
+
+/* -----------------------------------------
+   Section 3. DOM references and helpers
+   ----------------------------------------- */
+
+function q(sel) { return document.querySelector(sel); }
+function qa(sel) { return Array.from(document.querySelectorAll(sel)); }
+
+function initDomRefs() {
+  APP.dom.navMarket = q('#navMarket');
+  APP.dom.navWatchlist = q('#navWatchlist');
+  APP.dom.navHeatmap = q('#navHeatmap');
+  APP.dom.navGlobal = q('#navGlobal');
+
+  APP.dom.searchInput = q('#searchInput');
+  APP.dom.clearSearch = q('#clearSearch');
+
+  APP.dom.currencySelect = q('#currencySelect');
+  APP.dom.perPageSelect = q('#perPageSelect');
+  APP.dom.sortSelect = q('#sortSelect');
+
+  APP.dom.themeToggle = q('#themeToggle');
+  APP.dom.langToggle = q('#langToggle');
+
+  APP.dom.refreshBtn = q('#refreshBtn');
+  APP.dom.lastUpdated = q('#lastUpdated');
+
+  APP.dom.globalMcap = q('#globalMcap .value');
+  APP.dom.globalVolume = q('#globalVolume .value');
+  APP.dom.btcDominance = q('#btcDominance .value');
+  APP.dom.marketTrend = q('#marketTrend .value');
+
+  APP.dom.marketView = q('#marketView');
+  APP.dom.watchlistView = q('#watchlistView');
+  APP.dom.heatmapView = q('#heatmapView');
+  APP.dom.globalView = q('#globalView');
+
+  APP.dom.coinsTbody = q('#coinsTbody');
+  APP.dom.prevPage = q('#prevPage');
+  APP.dom.nextPage = q('#nextPage');
+  APP.dom.pageIndicator = q('#pageIndicator');
+
+  APP.dom.watchlistEmpty = q('#watchlistEmpty');
+  APP.dom.watchlistGrid = q('#watchlistGrid');
+
+  APP.dom.heatmapGrid = q('#heatmapGrid');
+
+  APP.dom.globalMetrics = q('#globalMetrics');
+  APP.dom.dominanceBars = q('#dominanceBars');
+  APP.dom.topVolumeList = q('#topVolumeList');
+
+  APP.dom.chartPanel = q('#chartPanel');
+  APP.dom.chartCoinIcon = q('#chartCoinIcon');
+  APP.dom.chartCoinName = q('#chartCoinName');
+  APP.dom.chartCoinSymbol = q('#chartCoinSymbol');
+  APP.dom.chartClose = q('#chartClose');
+
+  APP.dom.chartTabs = qa('.chart-tab');
+  APP.dom.sparkTab = q('#sparkTab');
+  APP.dom.tvMiniTab = q('#tvMiniTab');
+  APP.dom.tvFullTab = q('#tvFullTab');
+  APP.dom.infoTab = q('#infoTab');
+  APP.dom.sparkCanvas = q('#sparkCanvas');
+  APP.dom.tvMiniWidget = q('#tvMiniWidget');
+  APP.dom.tvFullWidget = q('#tvFullWidget');
+  APP.dom.coinInfoGrid = q('#coinInfoGrid');
+
+  APP.dom.coinModal = q('#coinModal');
+  APP.dom.modalClose = q('#modalClose');
+  APP.dom.modalCoinIcon = q('#modalCoinIcon');
+  APP.dom.modalCoinName = q('#modalCoinName');
+  APP.dom.modalCoinSymbol = q('#modalCoinSymbol');
+  APP.dom.modalFavToggle = q('#modalFavToggle');
+  APP.dom.modalMarketData = q('#modalMarketData');
+  APP.dom.modalLinksList = q('#modalLinksList');
+  APP.dom.modalDescription = q('#modalDescription');
 }
 
-// =====================
-// Coins list
-// =====================
+/* -----------------------------------------
+   Section 4. API layer
+   ----------------------------------------- */
 
-async function fetchMarketData() {
-  const tbody = document.getElementById("crypto-table-body");
-  if (!tbody) return;
-
-  try {
-    const res = await fetch(PAPRIKA_BASE + "/tickers?quotes=USD");
-    if (!res.ok) throw new Error("tickers error");
-    const data = await res.json();
-
-    // sort by rank
-    data.sort((a, b) => (a.rank || 999999) - (b.rank || 999999));
-    coinsData = data;
-    currentFilter = "all";
-    searchQuery = "";
-    applyFiltersAndRender();
-  } catch (e) {
-    console.error(e);
-    tbody.innerHTML =
-      '<tr><td colspan="8">Failed to load data from CoinPaprika API.</td></tr>';
-  }
+async function apiGet(path, params = {}) {
+  const url = new URL(APP.api.base + path);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), {
+    headers: {
+      'Accept': 'application/json',
+    },
+    // mode: 'cors' // default
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return await res.json();
 }
 
-function applyFiltersAndRender() {
-  let arr = [...coinsData];
-
-  if (currentFilter === "btceth") {
-    arr = arr.filter((c) => c.id === "btc-bitcoin" || c.id === "eth-ethereum");
-  } else if (currentFilter === "gainers") {
-    arr = arr.filter(
-      (c) => c.quotes && c.quotes.USD && c.quotes.USD.percent_change_24h > 0
+async function fetchMarkets({ page, perPage, currency, sort, query }) {
+  const orderMap = {
+    market_cap_desc: 'market_cap_desc',
+    market_cap_asc: 'market_cap_asc',
+    price_desc: 'price_desc',
+    price_asc: 'price_asc',
+    volume_desc: 'volume_desc',
+    volume_asc: 'volume_asc',
+    change_24h_desc: 'price_change_percentage_24h_desc',
+    change_24h_asc: 'price_change_percentage_24h_asc',
+  };
+  const params = {
+    vs_currency: currency,
+    order: orderMap[sort] || 'market_cap_desc',
+    per_page: perPage,
+    page,
+    sparkline: 'true',
+    price_change_percentage: '1h,24h,7d,30d',
+    locale: APP.state.lang === 'ru' ? 'ru' : 'en',
+  };
+  const data = await apiGet(APP.api.markets, params);
+  let filtered = data;
+  if (query) {
+    const ql = query.toLowerCase();
+    filtered = data.filter(c =>
+      c.name.toLowerCase().includes(ql) ||
+      c.symbol.toLowerCase().includes(ql) ||
+      c.id.toLowerCase().includes(ql)
     );
-  } else if (currentFilter === "losers") {
-    arr = arr.filter(
-      (c) => c.quotes && c.quotes.USD && c.quotes.USD.percent_change_24h < 0
-    );
   }
-
-  const q = searchQuery.trim().toLowerCase();
-  if (q) {
-    arr = arr.filter(
-      (c) =>
-        (c.name && c.name.toLowerCase().includes(q)) ||
-        (c.symbol && c.symbol.toLowerCase().includes(q))
-    );
-  }
-
-  filteredCoins = arr;
-  currentPage = 1;
-  renderCoinsTablePaged();
+  return filtered;
 }
 
-function renderCoinsTablePaged() {
-  const total = filteredCoins.length;
-  const end = Math.min(total, currentPage * COINS_PER_PAGE);
-  const slice = filteredCoins.slice(0, end);
-  renderCoinsTable(slice);
-
-  const shownEl = document.getElementById("shown-count");
-  const totalEl = document.getElementById("total-count");
-  if (shownEl) shownEl.textContent = String(slice.length);
-  if (totalEl) totalEl.textContent = String(total);
-
-  isLoadingMore = false;
+async function fetchGlobal() {
+  return await apiGet(APP.api.global);
 }
 
-function renderCoinsTable(coins) {
-  const tbody = document.getElementById("crypto-table-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+async function fetchCoin(id) {
+  return await apiGet(APP.api.coin(id), {
+    localization: APP.state.lang === 'ru' ? 'ru' : 'en',
+    tickers: 'false',
+    market_data: 'true',
+    community_data: 'false',
+    developer_data: 'false',
+    sparkline: 'true',
+  });
+}
 
-  coins.forEach((coin) => {
-    const tr = document.createElement("tr");
-    const q = coin.quotes && coin.quotes.USD ? coin.quotes.USD : {};
-    const price = q.price;
-    const volume = q.volume_24h;
-    const marketCap = q.market_cap;
-    const change24h = q.percent_change_24h;
+async function fetchMarketChart(id, vs, days = 30) {
+  const path = APP.api.marketChart(id, vs, days);
+  return await apiGet(path);
+}
 
-    const changeClass =
-      change24h == null ? "" : change24h >= 0 ? "positive" : "negative";
+/* -----------------------------------------
+   Section 5. Rendering functions
+   ----------------------------------------- */
 
-    const symbolFirst = (coin.symbol || "?").charAt(0).toUpperCase();
+function renderGlobal(global) {
+  const t = APP.i18n[APP.state.lang];
+  const mcap = global?.data?.total_market_cap?.[APP.state.currency] ?? null;
+  const vol = global?.data?.total_volume?.[APP.state.currency] ?? null;
+  const btcDom = global?.data?.market_cap_percentage?.btc ?? null;
 
-    tr.innerHTML = `
-      <td>${coin.rank || ""}</td>
-      <td>
-        <a href="coin.html?id=${coin.id}">
-          <div class="crypto-info">
-            <div class="crypto-icon">
-              ${symbolFirst}
-            </div>
-            <div>
-              <div class="crypto-name">${coin.name || coin.id}</div>
-              <div class="crypto-symbol">${(coin.symbol || "").toUpperCase()}</div>
-            </div>
+  APP.dom.globalMcap.textContent = mcap ? fmt.money(mcap) : '—';
+  APP.dom.globalVolume.textContent = vol ? fmt.money(vol) : '—';
+  APP.dom.btcDominance.textContent = btcDom ? `${btcDom.toFixed(2)}%` : '—';
+
+  const trendVal = (global?.data?.market_cap_change_percentage_24h_usd ?? 0);
+  const trendStr = `${fmt.perc(trendVal)} ${trendVal >= 0 ? t.growth : t.drop}`;
+  APP.dom.marketTrend.textContent = trendStr;
+}
+
+function renderTableRows(coins) {
+  const t = APP.i18n[APP.state.lang];
+  const rows = coins.map((c, idx) => {
+    const price = c.current_price ?? 0;
+    const ch24 = c.price_change_percentage_24h ?? 0;
+    const mcap = c.market_cap ?? 0;
+    const vol = c.total_volume ?? 0;
+    const circ = c.circulating_supply ?? 0;
+    const pos = ch24 >= 0 ? 'pos' : 'neg';
+    const isFav = APP.state.watchlist.has(c.id);
+
+    return `
+      <tr data-id="${fmt.esc(c.id)}" aria-label="${fmt.esc(c.name)}">
+        <td class="mono">${fmt.esc(((APP.state.page - 1) * APP.state.perPage) + idx + 1)}</td>
+        <td class="td-coin">
+          <img src="${fmt.esc(c.image)}" alt="${fmt.esc(c.symbol.toUpperCase())}">
+          <div>
+            <div class="coin-name">${fmt.esc(c.name)}</div>
+            <div class="coin-symbol">${fmt.esc(c.symbol.toUpperCase())}</div>
           </div>
-        </a>
-      </td>
-      <td>${formatPrice(price)}</td>
-      <td><span class="price-change ${changeClass}">${formatPercent(
-      change24h
-    )}</span></td>
-      <td>$${formatNumber(volume)}</td>
-      <td>$${formatNumber(marketCap)}</td>
-      <td><canvas class="sparkline" width="100" height="30" data-coin-id="${
-        coin.id
-      }"></canvas></td>
-      <td><button class="watchlist-btn" data-id="${coin.id}">☆</button></td>
+        </td>
+        <td class="td-price mono">${fmt.money(price)}</td>
+        <td class="td-change ${pos} mono">${fmt.perc(ch24)}</td>
+        <td class="mono">${fmt.money(mcap)}</td>
+        <td class="mono">${fmt.money(vol)}</td>
+        <td class="mono">${fmt.num(circ)}</td>
+        <td class="td-spark">
+          <canvas class="spark" width="120" height="36" data-series="${(c.sparkline_in_7d?.price ?? []).slice(-40).join(',')}"></canvas>
+        </td>
+        <td>
+          <div class="row-actions">
+            <button class="row-btn btn-details">${fmt.esc(t.details)}</button>
+            <button class="row-btn btn-chart">${fmt.esc(t.chart)}</button>
+            <button class="row-btn btn-fav ${isFav ? 'active' : ''}" title="${isFav ? fmt.esc(t.removeFav) : fmt.esc(t.addFav)}">${isFav ? '★' : '☆'}</button>
+          </div>
+        </td>
+      </tr>
     `;
+  }).join('');
 
-    tbody.appendChild(tr);
-  });
-
-  initWatchlistButtons();
-  initSparklines();
+  APP.dom.coinsTbody.innerHTML = rows || `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:16px;">${fmt.esc(t.errorFetch)}</td></tr>`;
+  // Draw sparks
+  qa('canvas.spark').forEach(drawSparkCanvas);
 }
 
-function loadMoreCoins() {
-  if (isLoadingMore) return;
-  const total = filteredCoins.length;
-  if (!total) return;
-  if (currentPage * COINS_PER_PAGE >= total) return;
-
-  isLoadingMore = true;
-  currentPage += 1;
-  renderCoinsTablePaged();
-}
-
-function initInfiniteScroll() {
-  window.addEventListener("scroll", () => {
-    const pos = window.scrollY + window.innerHeight;
-    const threshold = document.body.offsetHeight - 200;
-    if (pos >= threshold) {
-      loadMoreCoins();
-    }
-  });
-}
-
-function initFilters() {
-  const buttons = document.querySelectorAll(".filter-btn");
-  buttons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      buttons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFilter = btn.dataset.filter || "all";
-      applyFiltersAndRender();
-    });
-  });
-}
-
-function initSearch() {
-  const input = document.getElementById("globalSearch");
-  if (!input) return;
-  input.addEventListener("input", () => {
-    searchQuery = input.value || "";
-    applyFiltersAndRender();
-  });
-}
-
-function initTableSorting() {
-  const headers = document.querySelectorAll(".crypto-table thead th");
-  if (!headers.length) return;
-  headers.forEach((th, index) => {
-    th.addEventListener("click", () => {
-      const keyMap = {
-        0: "rank",
-        1: "name",
-        2: "price",
-        3: "change",
-        4: "volume",
-        5: "market_cap",
-      };
-      const key = keyMap[index];
-      if (!key) return;
-
-      const arr = [...filteredCoins];
-      arr.sort((a, b) => {
-        const qa = a.quotes?.USD || {};
-        const qb = b.quotes?.USD || {};
-        let va, vb;
-        switch (key) {
-          case "rank":
-            va = a.rank ?? 999999;
-            vb = b.rank ?? 999999;
-            break;
-          case "name":
-            va = a.name || "";
-            vb = b.name || "";
-            return va.localeCompare(vb);
-          case "price":
-            va = qa.price ?? 0;
-            vb = qb.price ?? 0;
-            break;
-          case "change":
-            va = qa.percent_change_24h ?? 0;
-            vb = qb.percent_change_24h ?? 0;
-            break;
-          case "volume":
-            va = qa.volume_24h ?? 0;
-            vb = qb.volume_24h ?? 0;
-            break;
-          case "market_cap":
-            va = qa.market_cap ?? 0;
-            vb = qb.market_cap ?? 0;
-            break;
-          default:
-            va = 0;
-            vb = 0;
-        }
-        return vb - va;
-      });
-      filteredCoins = arr;
-      currentPage = 1;
-      renderCoinsTablePaged();
-    });
-  });
-}
-
-function initWatchlistButtons() {
-  document.querySelectorAll(".watchlist-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      btn.classList.toggle("active");
-      btn.textContent = btn.classList.contains("active") ? "★" : "☆";
-    });
-  });
-}
-
-// =====================
-// Sparklines
-// =====================
-
-async function initSparklines() {
-  const canvases = document.querySelectorAll("canvas.sparkline");
-  if (!canvases.length) return;
-
-  const now = new Date();
-  const startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const startStr = startDate.toISOString().slice(0, 10);
-
-  canvases.forEach(async (canvas, idx) => {
-    const coinId = canvas.dataset.coinId;
-    if (!coinId) return;
-    // Ограничим число запросов (например, только первые 60 монет)
-    if (idx > 60) return;
-
-    try {
-      const url =
-        PAPRIKA_BASE +
-        `/tickers/${coinId}/historical?start=${startStr}&interval=1d&limit=7`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("sparkline error");
-      const data = await res.json();
-      const prices = (data || []).map((p) => p.price).filter((v) => v != null);
-      if (!prices.length) return;
-      drawSparkline(canvas, prices);
-    } catch (e) {
-      // просто не рисуем
-      console.warn("sparkline failed", coinId, e);
-    }
-  });
-}
-
-function drawSparkline(canvas, values) {
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width;
-  const h = canvas.height;
-
-  ctx.clearRect(0, 0, w, h);
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = "#22c55e";
-
-  ctx.beginPath();
-  values.forEach((v, i) => {
-    const x = (i / (values.length - 1 || 1)) * (w - 4) + 2;
-    const norm = (v - min) / range;
-    const y = h - norm * (h - 4) - 2;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-}
-
-// =====================
-// Charts (BTC / ETH / coin)
-// =====================
-
-function initCharts() {
-  const btcCanvas = document.getElementById("btcChart");
-  const ethCanvas = document.getElementById("ethChart");
-
-  if (btcCanvas) {
-    setupChartWithRanges(
-      "btc-bitcoin",
-      "btcChart",
-      "btcChartLoading",
-      "btcChartError",
-      "btc-range-buttons",
-      "btc-price-label",
-      (chart) => (btcChartInstance = chart)
-    );
-  }
-
-  if (ethCanvas) {
-    setupChartWithRanges(
-      "eth-ethereum",
-      "ethChart",
-      "ethChartLoading",
-      "ethChartError",
-      "eth-range-buttons",
-      "eth-price-label",
-      (chart) => (ethChartInstance = chart)
-    );
-  }
-}
-
-function getIntervalForDays(days) {
-  const d = Number(days) || 1;
-  if (d <= 2) return "1h";
-  if (d <= 7) return "2h";
-  if (d <= 30) return "4h";
-  if (d <= 90) return "12h";
-  return "1d";
-}
-
-function setupChartWithRanges(
-  coinId,
-  canvasId,
-  loadingId,
-  errorId,
-  buttonsId,
-  priceLabelId,
-  storeInstance
-) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const loadingEl = document.getElementById(loadingId);
-  const errorEl = document.getElementById(errorId);
-  const buttons = document.getElementById(buttonsId);
-  const priceLabel = document.getElementById(priceLabelId);
-  const ctx = canvas.getContext("2d");
-
-  async function loadChart(days) {
-    if (loadingEl) loadingEl.style.display = "flex";
-    if (errorEl) errorEl.textContent = "";
-
-    try {
-      const now = new Date();
-      const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-      const startStr = start.toISOString().slice(0, 10);
-      const interval = getIntervalForDays(days);
-
-      const url =
-        PAPRIKA_BASE +
-        `/tickers/${coinId}/historical?start=${startStr}&interval=${interval}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("chart error");
-      const data = await res.json();
-
-      const labels = data.map((p) =>
-        new Date(p.timestamp).toLocaleDateString(currentLang === "ru" ? "ru-RU" : "en-US", {
-          day: "2-digit",
-          month: "2-digit",
-        })
-      );
-      const values = data.map((p) => p.price);
-
-      const lastPrice = values[values.length - 1];
-      if (priceLabel && lastPrice != null) {
-        priceLabel.textContent = "· " + formatPrice(lastPrice);
-      }
-
-      const chartData = {
-        labels,
-        datasets: [
-          {
-            label: coinId,
-            data: values,
-            borderWidth: 2,
-            tension: 0.2,
-            pointRadius: 0,
-          },
-        ],
-      };
-
-      const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            ticks: {
-              maxTicksLimit: 8,
-            },
-          },
-          y: {
-            ticks: {
-              callback: (value) => formatNumber(value),
-            },
-          },
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => formatPrice(ctx.parsed.y),
-            },
-          },
-        },
-      };
-
-      if (canvas._chartInstance) {
-        canvas._chartInstance.destroy();
-      }
-
-      const chart = new Chart(ctx, {
-        type: "line",
-        data: chartData,
-        options: chartOptions,
-      });
-
-      canvas._chartInstance = chart;
-      if (typeof storeInstance === "function") storeInstance(chart);
-    } catch (e) {
-      console.error(e);
-      if (errorEl) {
-        const dict = I18N[currentLang] || I18N.ru;
-        errorEl.textContent =
-          (dict.chart_loading || "Chart loading error") + " (API)";
-      }
-    } finally {
-      if (loadingEl) loadingEl.style.display = "none";
-    }
-  }
-
-  if (buttons) {
-    buttons.addEventListener("click", (e) => {
-      const btn = e.target.closest(".chart-btn");
-      if (!btn) return;
-      buttons.querySelectorAll(".chart-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      const days = Number(btn.dataset.range || 1);
-      loadChart(days);
-    });
-  }
-
-  loadChart(1);
-}
-
-// Coin page
-
-async function initCoinPage() {
-  const coinId = getQueryParam("id");
-  if (!coinId) return;
-
-  await fetchCoinDetails(coinId);
-  setupChartWithRanges(
-    coinId,
-    "coinChart",
-    "coinChartLoading",
-    "coinChartError",
-    "coin-range-buttons",
-    "coin-price-label",
-    (chart) => (coinChartInstance = chart)
-  );
-}
-
-async function fetchCoinDetails(coinId) {
-  const logoEl = document.getElementById("coin-logo");
-  const nameEl = document.getElementById("coin-name");
-  const symbolEl = document.getElementById("coin-symbol");
-  const rankEl = document.getElementById("coin-rank");
-  const priceEl = document.getElementById("coin-price");
-  const changeEl = document.getElementById("coin-change-24h");
-  const capEl = document.getElementById("coin-market-cap");
-  const volEl = document.getElementById("coin-volume");
-  const supplyEl = document.getElementById("coin-supply");
-  const descEl = document.getElementById("coin-description");
-  const chartTitleEl = document.getElementById("coin-chart-title");
-
+function drawSparkCanvas(cv) {
   try {
-    const res = await fetch(
-      PAPRIKA_BASE +
-        `/coins/${coinId}`
-    );
-    if (!res.ok) throw new Error("coin meta error");
-    const meta = await res.json();
+    const series = (cv.dataset.series || '')
+      .split(',')
+      .map(Number)
+      .filter(n => Number.isFinite(n));
+    if (!series.length) return;
 
-    const tickerRes = await fetch(
-      PAPRIKA_BASE + `/tickers/${coinId}?quotes=USD`
-    );
-    if (!tickerRes.ok) throw new Error("coin ticker error");
-    const ticker = await tickerRes.json();
-    const q = ticker.quotes && ticker.quotes.USD ? ticker.quotes.USD : {};
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
 
-    if (logoEl && meta.logo) {
-      logoEl.src = meta.logo;
-      logoEl.alt = meta.name || coinId;
-    }
-    if (nameEl) nameEl.textContent = meta.name || coinId;
-    if (symbolEl) symbolEl.textContent = (meta.symbol || "").toUpperCase();
-    if (rankEl) rankEl.textContent = meta.rank ? "#" + meta.rank : "#—";
+    // Background baseline
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, H - 1);
+    ctx.lineTo(W, H - 1);
+    ctx.stroke();
 
-    if (priceEl) priceEl.textContent = formatPrice(q.price);
-    if (changeEl) {
-      const ch = q.percent_change_24h;
-      changeEl.textContent = formatPercent(ch);
-      changeEl.classList.toggle("positive", ch >= 0);
-      changeEl.classList.toggle("negative", ch < 0);
-    }
-    if (capEl) capEl.textContent = "$" + formatNumber(q.market_cap);
-    if (volEl) volEl.textContent = "$" + formatNumber(q.volume_24h);
-    if (supplyEl) supplyEl.textContent = formatNumber(ticker.circulating_supply);
+    // Scale
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const pad = 0.05 * (max - min || 1);
+    const ymin = min - pad, ymax = max + pad;
+    const stepX = W / (series.length - 1 || 1);
 
-    let desc = "";
-    if (currentLang === "ru" && meta.description) {
-      desc = meta.description;
-    } else if (meta.description) {
-      desc = meta.description;
-    }
-    desc = stripHtml(desc);
-    if (!desc) {
-      desc =
-        currentLang === "ru"
-          ? "Описание недоступно."
-          : "Description is not available.";
-    }
-    if (desc.length > 1500) desc = desc.slice(0, 1500) + "...";
-    if (descEl) descEl.textContent = desc;
+    // Color gradient
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
+    grad.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
 
-    if (chartTitleEl) {
-      chartTitleEl.textContent = `${meta.name || coinId} (${(meta.symbol || "").toUpperCase()})`;
-    }
-  } catch (e) {
-    console.error(e);
-    if (descEl) {
-      descEl.textContent =
-        currentLang === "ru"
-          ? "Не удалось загрузить данные монеты. Попробуй позже."
-          : "Failed to load coin data. Please try again later.";
-    }
-  }
+    // Line
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    series.forEach((v, i) => {
+      const x = i * stepX;
+      const y = H - ((v - ymin) / (ymax - ymin)) * H;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    const fillGrad = ctx.createLinearGradient(0, 0, 0, H);
+    fillGrad.addColorStop(0, 'rgba(78,161,255,0.18)');
+    fillGrad.addColorStop(1, 'rgba(78,161,255,0.02)');
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+  } catch (e) {}
 }
 
-// =====================
-// News
-// =====================
+function renderPagination() {
+  const t = APP.i18n[APP.state.lang];
+  APP.dom.pageIndicator.textContent = `${t.page} ${APP.state.page}`;
+  APP.dom.prevPage.disabled = APP.state.page <= 1;
+  APP.dom.nextPage.disabled = APP.state.coins.length < APP.state.perPage;
+}
 
-async function fetchNews() {
-  const statusEl = document.getElementById("news-status");
-  const grid = document.getElementById("news-grid");
-  const link = document.getElementById("newsSourceLink");
-  if (!statusEl || !grid) return;
-
-  const dict = I18N[currentLang] || I18N.ru;
-
-  if (!NEWS_API_KEY || NEWS_API_KEY === "YOUR_NEWS_API_KEY_HERE") {
-    statusEl.textContent = dict.news_status_need_key;
-    if (link) {
-      link.textContent = "NewsData.io";
-      link.href = "https://newsdata.io/";
-    }
+function renderWatchlist() {
+  const t = APP.i18n[APP.state.lang];
+  const favIds = Array.from(APP.state.watchlist);
+  if (!favIds.length) {
+    APP.dom.watchlistEmpty.classList.remove('hidden');
+    APP.dom.watchlistGrid.innerHTML = '';
     return;
   }
+  APP.dom.watchlistEmpty.classList.add('hidden');
 
-  statusEl.textContent = dict.news_status_loading;
-  if (link) {
-    link.textContent = "NewsData.io";
-    link.href = "https://newsdata.io/";
-  }
-
-  try {
-    const res = await fetch(NEWS_API_URL);
-    if (!res.ok) throw new Error("news error");
-    const data = await res.json();
-    const articles = data.results || [];
-    if (!articles.length) {
-      statusEl.textContent = dict.news_status_empty;
-      return;
-    }
-    statusEl.textContent = "";
-    grid.innerHTML = "";
-
-    articles.slice(0, 9).forEach((a) => {
-      const card = document.createElement("article");
-      card.className = "news-card";
-
-      const title = a.title || "—";
-      const desc = a.description || "";
-      const src = a.source_id || "Source";
-      const pub = a.pubDate
-        ? new Date(a.pubDate).toLocaleString(
-            currentLang === "ru" ? "ru-RU" : "en-US"
-          )
-        : "";
-
-      card.innerHTML = `
-        <div class="news-title">${title}</div>
-        <div class="news-description">${desc.slice(0, 160)}${
-        desc.length > 160 ? "..." : ""
-      }</div>
-        <div class="news-meta">
-          <span>${src}</span>
-          <span>${pub}</span>
+  const list = APP.state.coins.filter(c => favIds.includes(c.id));
+  const cards = list.map(c => `
+    <div class="card" data-id="${fmt.esc(c.id)}">
+      <div class="card-head">
+        <div class="card-coin">
+          <img src="${fmt.esc(c.image)}" alt="${fmt.esc(c.symbol.toUpperCase())}">
+          <div>
+            <div class="card-title">${fmt.esc(c.name)}</div>
+            <div class="card-subtitle">${fmt.esc(c.symbol.toUpperCase())}</div>
+          </div>
         </div>
-        ${
-          a.link
-            ? `<a href="${a.link}" target="_blank" rel="noopener noreferrer" class="news-link">${dict.news_read_more}</a>`
-            : ""
-        }
-      `;
-      grid.appendChild(card);
+        <button class="fav-btn ${APP.state.watchlist.has(c.id) ? 'active':''}" title="${APP.state.watchlist.has(c.id)? fmt.esc(t.removeFav):fmt.esc(t.addFav)}">${APP.state.watchlist.has(c.id) ? '★' : '☆'}</button>
+      </div>
+      <div class="card-body">
+        <div><span class="label">${fmt.esc(t.price)}</span> <span class="mono">${fmt.money(c.current_price)}</span></div>
+        <div><span class="label">${fmt.esc(t.change24h)}</span> <span class="mono ${c.price_change_percentage_24h>=0?'td-change pos':'td-change neg'}">${fmt.perc(c.price_change_percentage_24h)}</span></div>
+        <div><span class="label">${fmt.esc(t.marketCap)}</span> <span class="mono">${fmt.money(c.market_cap)}</span></div>
+        <div class="card-actions">
+          <button class="actions btn btn-details">${fmt.esc(t.details)}</button>
+          <button class="actions btn btn-chart">${fmt.esc(t.chart)}</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  APP.dom.watchlistGrid.innerHTML = cards;
+}
+
+function renderHeatmap() {
+  const t = APP.i18n[APP.state.lang];
+  const tiles = APP.state.coins.map(c => {
+    const ch = c.price_change_percentage_24h ?? 0;
+    const bg = ch >= 0
+      ? `linear-gradient(135deg, rgba(0,208,138,0.2), rgba(0,208,138,0.05))`
+      : `linear-gradient(135deg, rgba(255,91,91,0.25), rgba(255,91,91,0.05))`;
+    return `
+      <div class="heat-tile" data-id="${fmt.esc(c.id)}" style="background:${bg}">
+        <div class="tile-head">
+          <span>${fmt.esc(c.symbol.toUpperCase())}</span>
+          <span>${fmt.money(c.current_price)}</span>
+        </div>
+        <div class="tile-body ${ch>=0?'pos':'neg'}">${fmt.perc(ch)}</div>
+      </div>
+    `;
+  }).join('');
+
+  APP.dom.heatmapGrid.innerHTML = tiles;
+}
+
+function renderGlobalCards(global) {
+  const t = APP.i18n[APP.state.lang];
+
+  const metrics = [
+    ['Активных криптовалют', global?.data?.active_cryptocurrencies],
+    ['Рынков', global?.data?.markets],
+    ['Ойк. индекс', global?.data?.updated_at ? new Date(global.data.updated_at*1000).toLocaleString(APP.state.lang === 'ru' ? 'ru-RU' : 'en-US') : '—'],
+    ['24ч изменение рынка', fmt.perc(global?.data?.market_cap_change_percentage_24h_usd ?? 0)],
+  ];
+  APP.dom.globalMetrics.innerHTML = metrics.map(([k,v]) => `<li><span>${fmt.esc(k)}</span><span class="mono">${fmt.esc(v ?? '—')}</span></li>`).join('');
+
+  const btcDom = global?.data?.market_cap_percentage?.btc ?? 0;
+  const ethDom = global?.data?.market_cap_percentage?.eth ?? 0;
+  const stblDom = (global?.data?.market_cap_percentage?.usdt ?? 0) + (global?.data?.market_cap_percentage?.usdc ?? 0);
+
+  APP.dom.dominanceBars.innerHTML = `
+    <div class="dom-bar"><div class="fill" style="width:${fmt.clamp(btcDom,0,100)}%;"></div></div>
+    <div class="dom-bar"><div class="fill" style="width:${fmt.clamp(ethDom,0,100)}%;background:linear-gradient(90deg,var(--accent),var(--primary));"></div></div>
+    <div class="dom-bar"><div class="fill" style="width:${fmt.clamp(stblDom,0,100)}%;background:linear-gradient(90deg,#999,#ddd);"></div></div>
+  `;
+
+  const topVol = [...APP.state.coins]
+    .sort((a,b) => (b.total_volume ?? 0) - (a.total_volume ?? 0))
+    .slice(0, 10);
+  APP.dom.topVolumeList.innerHTML = topVol.map(c => `<li><span>${fmt.esc(c.name)} (${fmt.esc(c.symbol.toUpperCase())})</span> <span class="mono">${fmt.money(c.total_volume)}</span></li>`).join('');
+}
+
+/* -----------------------------------------
+   Section 6. Chart panel + TradingView
+   ----------------------------------------- */
+
+function openChartPanel(coin) {
+  APP.state.selectedCoin = coin;
+  APP.dom.chartCoinIcon.src = coin.image;
+  APP.dom.chartCoinIcon.alt = coin.symbol.toUpperCase();
+  APP.dom.chartCoinName.textContent = coin.name;
+  APP.dom.chartCoinSymbol.textContent = coin.symbol.toUpperCase();
+
+  APP.dom.chartPanel.classList.add('open');
+  switchChartTab('spark'); // default
+  renderSparkChart(coin);
+  renderInfoTab(coin);
+  initTvMini(coin);
+  initTvFull(coin);
+}
+
+function closeChartPanel() {
+  APP.state.selectedCoin = null;
+  APP.dom.chartPanel.classList.remove('open');
+  APP.dom.tvMiniWidget.innerHTML = '';
+  APP.dom.tvFullWidget.innerHTML = '';
+}
+
+function switchChartTab(tab) {
+  APP.dom.chartTabs.forEach(b => {
+    const isActive = b.dataset.tab === tab;
+    b.classList.toggle('active', isActive);
+  });
+  APP.dom.sparkTab.classList.toggle('active', tab === 'spark');
+  APP.dom.tvMiniTab.classList.toggle('active', tab === 'tv-mini');
+  APP.dom.tvFullTab.classList.toggle('active', tab === 'tv-full');
+  APP.dom.infoTab.classList.toggle('active', tab === 'info');
+}
+
+async function renderSparkChart(coin) {
+  const canvas = APP.dom.sparkCanvas;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  // Fetch market chart
+  try {
+    const data = await fetchMarketChart(coin.id, APP.state.currency, 60);
+    const series = (data?.prices ?? []).map(([ts, price]) => price);
+    if (!series.length) return;
+    // Draw
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const pad = 0.05 * (max - min || 1);
+    const ymin = min - pad, ymax = max + pad;
+    const stepX = W / (series.length - 1 || 1);
+
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    series.forEach((v, i) => {
+      const x = i * stepX;
+      const y = H - ((v - ymin) / (ymax - ymin)) * H;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
+    ctx.stroke();
+
+    // Fill
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    const fillGrad = ctx.createLinearGradient(0, 0, 0, H);
+    fillGrad.addColorStop(0, 'rgba(0,87,255,0.22)');
+    fillGrad.addColorStop(1, 'rgba(0,87,255,0.02)');
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+
   } catch (e) {
-    console.error(e);
-    statusEl.textContent = dict.news_status_error;
+    // ignore
   }
 }
 
-// =====================
-// DOMContentLoaded
-// =====================
+function guessTvSymbol(coin) {
+  return APP.tvSymbols[coin.id] || `CRYPTOCAP:${coin.symbol.toUpperCase()}`;
+}
 
-document.addEventListener("DOMContentLoaded", () => {
-  // language
-  const savedLang = localStorage.getItem("cw_lang");
-  if (savedLang === "en" || savedLang === "ru") {
-    currentLang = savedLang;
+function initTvMini(coin) {
+  APP.dom.tvMiniWidget.innerHTML = '';
+  const symbol = guessTvSymbol(coin);
+  // Mini chart widget
+  try {
+    new TradingView.widget({
+      autosize: true,
+      symbol: symbol,
+      interval: '60',
+      timezone: 'Etc/UTC',
+      theme: APP.state.theme === 'dark' ? 'dark' : 'light',
+      style: '1',
+      toolbar_bg: '#f1f3f6',
+      hide_top_toolbar: true,
+      hide_legend: true,
+      container_id: APP.dom.tvMiniWidget,
+      save_image: false,
+      locale: APP.state.lang === 'ru' ? 'ru' : 'en',
+    });
+  } catch (e) {
+    APP.dom.tvMiniWidget.innerHTML = `<div style="padding:10px;color:var(--text-dim);">TradingView недоступен.</div>`;
   }
-  initLanguageSwitcher();
-  applyI18n();
+}
 
-  initThemeToggle();
+function initTvFull(coin) {
+  APP.dom.tvFullWidget.innerHTML = '';
+  const symbol = guessTvSymbol(coin);
+  // Advanced chart widget
+  try {
+    new TradingView.widget({
+      autosize: true,
+      symbol: symbol,
+      interval: '240',
+      timezone: 'Etc/UTC',
+      theme: APP.state.theme === 'dark' ? 'dark' : 'light',
+      style: '3',
+      allow_symbol_change: true,
+      withdateranges: true,
+      studies: ['MACD@tv-basicstudies','RSI@tv-basicstudies'],
+      container_id: APP.dom.tvFullWidget,
+      locale: APP.state.lang === 'ru' ? 'ru' : 'en',
+      save_image: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+    });
+  } catch (e) {
+    APP.dom.tvFullWidget.innerHTML = `<div style="padding:10px;color:var(--text-dim);">TradingView недоступен.</div>`;
+  }
+}
 
-  const isCoinPage = !!document.getElementById("coin-page-root");
-  if (isCoinPage) {
-    initCoinPage();
+function renderInfoTab(coin) {
+  const items = [
+    ['Rank', coin.market_cap_rank],
+    ['Price', fmt.money(coin.current_price)],
+    ['24h', fmt.perc(coin.price_change_percentage_24h)],
+    ['7d', fmt.perc(coin.price_change_percentage_7d_in_currency ?? 0)],
+    ['30d', fmt.perc(coin.price_change_percentage_30d_in_currency ?? 0)],
+    ['Market cap', fmt.money(coin.market_cap)],
+    ['Volume 24h', fmt.money(coin.total_volume)],
+    ['Circulating', fmt.num(coin.circulating_supply)],
+    ['Ath', fmt.money(coin.ath)],
+    ['Ath change', fmt.perc(coin.ath_change_percentage)],
+  ];
+  APP.dom.coinInfoGrid.innerHTML = items.map(([k,v]) => `
+    <div class="info-item">
+      <div class="label">${fmt.esc(k)}</div>
+      <div class="value mono">${fmt.esc(v ?? '—')}</div>
+    </div>
+  `).join('');
+}
+
+/* -----------------------------------------
+   Section 7. Modal details
+   ----------------------------------------- */
+
+async function openCoinModal(id) {
+  try {
+    const coin = await fetchCoin(id);
+    APP.dom.modalCoinIcon.src = coin.image?.small || coin.image?.thumb || '';
+    APP.dom.modalCoinName.textContent = coin.name || '—';
+    APP.dom.modalCoinSymbol.textContent = coin.symbol?.toUpperCase() || '—';
+
+    const md = coin.market_data || {};
+    const kv = [
+      ['Rank', coin.market_cap_rank],
+      ['Price', fmt.money(md.current_price?.[APP.state.currency])],
+      ['24h', fmt.perc(md.price_change_percentage_24h || 0)],
+      ['7d', fmt.perc(md.price_change_percentage_7d || 0)],
+      ['30d', fmt.perc(md.price_change_percentage_30d || 0)],
+      ['Market cap', fmt.money(md.market_cap?.[APP.state.currency])],
+      ['Volume 24h', fmt.money(md.total_volume?.[APP.state.currency])],
+      ['Circulating', fmt.num(md.circulating_supply)],
+      ['FDV', fmt.money(md.fully_diluted_valuation?.[APP.state.currency])],
+      ['ATH', fmt.money(md.ath?.[APP.state.currency])],
+      ['ATH change', fmt.perc(md.ath_change_percentage?.[APP.state.currency] || 0)],
+      ['ATL', fmt.money(md.atl?.[APP.state.currency])],
+    ];
+    APP.dom.modalMarketData.innerHTML = kv.map(([k,v]) => `<li><span>${fmt.esc(k)}</span><span class="mono">${fmt.esc(v ?? '—')}</span></li>`).join('');
+
+    const links = coin.links || {};
+    const homepage = links.homepage?.[0];
+    const repos = links.repos_url?.github || [];
+    const twitter = links.twitter_screen_name ? `https://twitter.com/${links.twitter_screen_name}` : null;
+    const reddit = links.subreddit_url;
+    const explorers = links.blockchain_site?.filter(Boolean).slice(0, 5) || [];
+    const linkItems = []
+      .concat(homepage ? [`<li><a href="${fmt.esc(homepage)}" target="_blank" rel="noopener">Website</a></li>`] : [])
+      .concat(twitter ? [`<li><a href="${fmt.esc(twitter)}" target="_blank" rel="noopener">Twitter</a></li>`] : [])
+      .concat(reddit ? [`<li><a href="${fmt.esc(reddit)}" target="_blank" rel="noopener">Reddit</a></li>`] : [])
+      .concat(explorers.map(u => `<li><a href="${fmt.esc(u)}" target="_blank" rel="noopener">Explorer</a></li>`))
+      .concat(repos.slice(0,3).map(u => `<li><a href="${fmt.esc(u)}" target="_blank" rel="noopener">GitHub</a></li>`));
+    APP.dom.modalLinksList.innerHTML = linkItems.join('') || `<li style="color:var(--text-dim);">—</li>`;
+
+    const desc = (coin.description?.[APP.state.lang] || coin.description?.en || '').trim();
+    APP.dom.modalDescription.innerHTML = desc ? sanitizeDescription(desc) : '—';
+
+    // Fav toggle state
+    APP.dom.modalFavToggle.classList.toggle('active', APP.state.watchlist.has(coin.id));
+    APP.dom.modalFavToggle.onclick = () => toggleFav(coin.id);
+
+    APP.dom.coinModal.setAttribute('aria-hidden', 'false');
+  } catch (e) {
+    alert(APP.i18n[APP.state.lang].errorFetch);
+  }
+}
+
+function closeCoinModal() {
+  APP.dom.coinModal.setAttribute('aria-hidden', 'true');
+}
+
+function sanitizeDescription(html) {
+  // Simple sanitizer: allow <p>, <a>, <br>, <ul>, <li>, <strong>, <em>
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const allowed = ['P','A','BR','UL','LI','STRONG','EM','B','I'];
+  const walker = document.createTreeWalker(tmp, NodeFilter.SHOW_ELEMENT, null);
+  const toRemove = [];
+  while (walker.nextNode()) {
+    const el = walker.currentNode;
+    if (!allowed.includes(el.tagName)) {
+      toRemove.push(el);
+    } else {
+      // scrub attributes except href for A
+      [...el.attributes].forEach(attr => {
+        if (el.tagName === 'A' && attr.name === 'href') return;
+        el.removeAttribute(attr.name);
+      });
+      if (el.tagName === 'A') {
+        el.setAttribute('target','_blank');
+        el.setAttribute('rel','noopener');
+      }
+    }
+  }
+  toRemove.forEach(el => {
+    const span = document.createElement('span');
+    span.textContent = el.textContent;
+    el.replaceWith(span);
+  });
+  return tmp.innerHTML;
+}
+
+/* -----------------------------------------
+   Section 8. Interactions
+   ----------------------------------------- */
+
+function bindEvents() {
+  // Navigation
+  [APP.dom.navMarket, APP.dom.navWatchlist, APP.dom.navHeatmap, APP.dom.navGlobal].forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+
+  // Search
+  APP.dom.searchInput.placeholder = APP.i18n[APP.state.lang].searchPlaceholder;
+  APP.dom.searchInput.addEventListener('input', fmt.debounce(() => {
+    APP.state.query = APP.dom.searchInput.value.trim();
+    refreshMarket();
+  }, 250));
+  APP.dom.clearSearch.addEventListener('click', () => {
+    APP.dom.searchInput.value = '';
+    APP.state.query = '';
+    refreshMarket();
+  });
+
+  // Filters
+  APP.dom.currencySelect.value = APP.state.currency;
+  APP.dom.currencySelect.addEventListener('change', () => {
+    APP.state.currency = APP.dom.currencySelect.value;
+    storage.set('currency', APP.state.currency);
+    refreshGlobal();
+    refreshMarket();
+  });
+
+  APP.dom.perPageSelect.value = String(APP.state.perPage);
+  APP.dom.perPageSelect.addEventListener('change', () => {
+    APP.state.perPage = parseInt(APP.dom.perPageSelect.value, 10) || 50;
+    APP.state.page = 1;
+    storage.set('perPage', APP.state.perPage);
+    refreshMarket();
+  });
+
+  APP.dom.sortSelect.value = APP.state.sort;
+  APP.dom.sortSelect.addEventListener('change', () => {
+    APP.state.sort = APP.dom.sortSelect.value;
+    storage.set('sort', APP.state.sort);
+    refreshMarket();
+  });
+
+  // Theme
+  APP.dom.themeToggle.addEventListener('click', () => {
+    APP.state.theme = APP.state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = APP.state.theme;
+    storage.set('theme', APP.state.theme);
+    // Rerender tradingview with new theme
+    if (APP.state.selectedCoin) {
+      initTvMini(APP.state.selectedCoin);
+      initTvFull(APP.state.selectedCoin);
+    }
+  });
+
+  // Language
+  APP.dom.langToggle.textContent = APP.i18n[APP.state.lang].ru;
+  APP.dom.langToggle.addEventListener('click', () => {
+    APP.state.lang = APP.state.lang === 'ru' ? 'en' : 'ru';
+    storage.set('lang', APP.state.lang);
+    applyLang();
+    refreshGlobal();
+    refreshMarket();
+    if (APP.state.selectedCoin) {
+      initTvMini(APP.state.selectedCoin);
+      initTvFull(APP.state.selectedCoin);
+    }
+  });
+
+  // Refresh
+  APP.dom.refreshBtn.addEventListener('click', () => {
+    refreshGlobal();
+    refreshMarket();
+  });
+
+  // Pagination
+  APP.dom.prevPage.addEventListener('click', () => {
+    if (APP.state.page > 1) {
+      APP.state.page--;
+      refreshMarket();
+    }
+  });
+  APP.dom.nextPage.addEventListener('click', () => {
+    APP.state.page++;
+    refreshMarket();
+  });
+
+  // Table row actions
+  APP.dom.coinsTbody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    const id = tr.dataset.id;
+    const coin = APP.state.coins.find(c => c.id === id);
+    if (!coin) return;
+
+    if (e.target.classList.contains('btn-details')) {
+      openCoinModal(id);
+    } else if (e.target.classList.contains('btn-chart')) {
+      openChartPanel(coin);
+    } else if (e.target.classList.contains('btn-fav')) {
+      toggleFav(id);
+      renderTableRows(APP.state.coins);
+      renderWatchlist();
+    } else {
+      // click row selects + opens chart
+      qa('.coins-table tbody tr').forEach(r => r.classList.remove('selected'));
+      tr.classList.add('selected');
+      openChartPanel(coin);
+    }
+  });
+
+  // Watchlist interactions
+  APP.dom.watchlistGrid.addEventListener('click', (e) => {
+    const card = e.target.closest('.card[data-id]');
+    if (!card) return;
+    const id = card.dataset.id;
+    const coin = APP.state.coins.find(c => c.id === id);
+    if (!coin) return;
+
+    if (e.target.classList.contains('fav-btn')) {
+      toggleFav(id);
+      renderWatchlist();
+      renderTableRows(APP.state.coins);
+    } else if (e.target.classList.contains('btn-details')) {
+      openCoinModal(id);
+    } else if (e.target.classList.contains('btn-chart')) {
+      openChartPanel(coin);
+    } else {
+      openChartPanel(coin);
+    }
+  });
+
+  // Heatmap tile clicks
+  APP.dom.heatmapGrid.addEventListener('click', (e) => {
+    const tile = e.target.closest('.heat-tile[data-id]');
+    if (!tile) return;
+    const id = tile.dataset.id;
+    const coin = APP.state.coins.find(c => c.id === id);
+    if (coin) openChartPanel(coin);
+  });
+
+  // Chart panel
+  APP.dom.chartClose.addEventListener('click', closeChartPanel);
+  APP.dom.chartTabs.forEach(btn => {
+    btn.addEventListener('click', () => switchChartTab(btn.dataset.tab));
+  });
+
+  // Modal
+  APP.dom.modalClose.addEventListener('click', closeCoinModal);
+  APP.dom.coinModal.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-backdrop')) closeCoinModal();
+  });
+}
+
+function switchView(view) {
+  qa('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  qa('.view').forEach(v => v.classList.toggle('active', v.id === `${view}View`));
+}
+
+/* -----------------------------------------
+   Section 9. Language application
+   ----------------------------------------- */
+
+function applyLang() {
+  const t = APP.i18n[APP.state.lang];
+  // Update nav labels
+  APP.dom.navMarket.textContent = t.market;
+  APP.dom.navWatchlist.textContent = t.watchlist;
+  APP.dom.navHeatmap.textContent = t.heatmap;
+  APP.dom.navGlobal.textContent = t.global;
+  // Search placeholder
+  APP.dom.searchInput.placeholder = t.searchPlaceholder;
+  APP.dom.clearSearch.title = t.clear;
+  // Toggles
+  APP.dom.langToggle.textContent = APP.state.lang === 'ru' ? t.ru : t.en;
+}
+
+/* -----------------------------------------
+   Section 10. Watchlist
+   ----------------------------------------- */
+
+function toggleFav(id) {
+  if (APP.state.watchlist.has(id)) {
+    APP.state.watchlist.delete(id);
   } else {
-    initSearch();
-    initFilters();
-    initInfiniteScroll();
-    initTableSorting();
+    APP.state.watchlist.add(id);
+  }
+  storage.setSet('watchlist', APP.state.watchlist);
+}
 
-    fetchGlobalStats();
-    fetchMarketData();
-    initCharts();
-    fetchNews();
+/* -----------------------------------------
+   Section 11. App bootstrap and refresh
+   ----------------------------------------- */
+
+async function refreshGlobal() {
+  try {
+    const g = await fetchGlobal();
+    APP.state.global = g;
+    renderGlobal(g);
+    renderGlobalCards(g);
+    APP.dom.lastUpdated.textContent = `${APP.i18n[APP.state.lang].lastUpdated}: ${fmt.time(Date.now())}`;
+  } catch (e) {
+    APP.dom.lastUpdated.textContent = APP.i18n[APP.state.lang].errorFetch;
+  }
+}
+
+async function refreshMarket() {
+  const params = {
+    page: APP.state.page,
+    perPage: APP.state.perPage,
+    currency: APP.state.currency,
+    sort: APP.state.sort,
+    query: APP.state.query,
+  };
+  try {
+    const coins = await fetchMarkets(params);
+    APP.state.coins = coins;
+    renderTableRows(coins);
+    renderPagination();
+    renderWatchlist();
+    renderHeatmap();
+  } catch (e) {
+    APP.dom.coinsTbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:16px;">${fmt.esc(APP.i18n[APP.state.lang].errorFetch)}</td></tr>`;
+  }
+}
+
+function loadState() {
+  APP.state.currency = storage.get('currency', APP.opts.currency);
+  APP.state.perPage = storage.get('perPage', APP.opts.perPage);
+  APP.state.sort = storage.get('sort', APP.opts.sort);
+  APP.state.lang = storage.get('lang', APP.opts.lang);
+  APP.state.theme = storage.get('theme', APP.opts.theme);
+  APP.state.watchlist = storage.getSet('watchlist');
+  document.documentElement.dataset.theme = APP.state.theme;
+}
+
+async function bootstrap() {
+  initDomRefs();
+  loadState();
+  applyLang();
+  bindEvents();
+  await refreshGlobal();
+  await refreshMarket();
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+/* -----------------------------------------
+   Section 12. Extended functionality and helpers
+   - Extra sorting, client-side cache, retries
+   - Accessibility tweaks
+   - Long code section with robust capabilities
+   ----------------------------------------- */
+
+// Simple in-memory cache for coin details
+const cache = {
+  coins: new Map(), // id -> details
+  charts: new Map(), // id -> series
+};
+
+async function getCoinCached(id) {
+  if (cache.coins.has(id)) return cache.coins.get(id);
+  const c = await fetchCoin(id);
+  cache.coins.set(id, c);
+  return c;
+}
+
+async function getChartCached(id, vs, days) {
+  const key = `${id}:${vs}:${days}`;
+  if (cache.charts.has(key)) return cache.charts.get(key);
+  const c = await fetchMarketChart(id, vs, days);
+  cache.charts.set(key, c);
+  return c;
+}
+
+// Retry wrapper
+async function withRetry(fn, attempts = 2, delayMs = 500) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
+// Keyboard accessibility for modal & panel
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (APP.dom.coinModal.getAttribute('aria-hidden') === 'false') {
+      closeCoinModal();
+    } else if (APP.dom.chartPanel.classList.contains('open')) {
+      closeChartPanel();
+    }
   }
 });
+
+// Advanced sorting (client-side) if needed
+function clientSortCoins(coins, sortKey) {
+  const map = {
+    market_cap_desc: (a,b) => (b.market_cap ?? 0) - (a.market_cap ?? 0),
+    market_cap_asc: (a,b) => (a.market_cap ?? 0) - (b.market_cap ?? 0),
+    price_desc: (a,b) => (b.current_price ?? 0) - (a.current_price ?? 0),
+    price_asc: (a,b) => (a.current_price ?? 0) - (b.current_price ?? 0),
+    volume_desc: (a,b) => (b.total_volume ?? 0) - (a.total_volume ?? 0),
+    volume_asc: (a,b) => (a.total_volume ?? 0) - (b.total_volume ?? 0),
+    change_24h_desc: (a,b) => (b.price_change_percentage_24h ?? 0) - (a.price_change_percentage_24h ?? 0),
+    change_24h_asc: (a,b) => (a.price_change_percentage_24h ?? 0) - (b.price_change_percentage_24h ?? 0),
+  };
+  const cmp = map[sortKey] || map.market_cap_desc;
+  return [...coins].sort(cmp);
+}
+
+/* -----------------------------------------
+   Section 13. Long-form enhancements
+   - Extended heatmap gradient logic
+   - Extra UI micro-interactions
+   - Detailed error banners
+   ----------------------------------------- */
+
+function renderErrorBanner(target, msg) {
+  const div = document.createElement('div');
+  div.style.background = 'linear-gradient(90deg, var(--danger), rgba(255,77,79,0.2))';
+  div.style.border = '1px solid var(--danger)';
+  div.style.color = '#fff';
+  div.style.padding = '10px';
+  div.style.borderRadius = '8px';
+  div.style.margin = '10px 0';
+  div.textContent = msg;
+  target.innerHTML = '';
+  target.appendChild(div);
+}
+
+function enhanceHeatmapColors() {
+  qa('.heat-tile').forEach(tile => {
+    const id = tile.dataset.id;
+    const c = APP.state.coins.find(x => x.id === id);
+    if (!c) return;
+    const ch = c.price_change_percentage_24h ?? 0;
+    const intensity = fmt.clamp(Math.abs(ch) / 10, 0, 1); // 0..1
+    const base = ch >= 0
+      ? [0, 208, 138] // green
+      : [255, 91, 91]; // red
+    const bg = `linear-gradient(135deg, rgba(${base[0]},${base[1]},${base[2]},${0.15 + 0.35*intensity}), rgba(${base[0]},${base[1]},${base[2]},0.04))`;
+    tile.style.background = bg;
+  });
+}
+
+/* -----------------------------------------
+   Section 14. Tooltips and micro UX
+   ----------------------------------------- */
+
+function attachRowTooltips() {
+  qa('.row-actions .row-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', () => {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = btn.title || btn.textContent;
+    });
+    btn.addEventListener('mouseleave', () => {
+      if (btn.dataset.originalText) {
+        btn.textContent = btn.dataset.originalText;
+      }
+    });
+  });
+}
+
+/* -----------------------------------------
+   Section 15. Language-sensitive labels refresh
+   ----------------------------------------- */
+
+function refreshHeadersText() {
+  const t = APP.i18n[APP.state.lang];
+  const ths = qa('.coins-table thead th');
+  if (ths.length >= 9) {
+    ths[1].textContent = APP.state.lang === 'ru' ? 'Монета' : 'Coin';
+    ths[2].textContent = t.price;
+    ths[3].textContent = t.change24h;
+    ths[4].textContent = t.marketCap;
+    ths[5].textContent = t.volume24h;
+    ths[6].textContent = t.circulating;
+    ths[7].textContent = APP.state.lang === 'ru' ? 'Линия' : 'Spark';
+    ths[8].textContent = APP.state.lang === 'ru' ? 'Действия' : 'Actions';
+  }
+}
+
+/* -----------------------------------------
+   Section 16. Extra: synthetic sparkline for missing data
+   ----------------------------------------- */
+
+function ensureSparklines() {
+  qa('canvas.spark').forEach(cv => {
+    const data = (cv.dataset.series || '').trim();
+    if (!data) {
+      // synth series
+      const series = Array.from({
