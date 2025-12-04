@@ -1,219 +1,271 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <title>CryptoWatch - Crypto Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script defer src="script.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description" content="Crypto dashboard в стиле CoinGecko с CoinGecko API и TradingView" />
+  <title>Crypto Dashboard — Market & Charts</title>
+  <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+  <link rel="preconnect" href="https://www.tradingview.com" crossorigin />
+  <link rel="dns-prefetch" href="https://api.coingecko.com" />
+  <link rel="dns-prefetch" href="https://www.tradingview.com" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>₿</text></svg>">
+  <script>
+    // Prevent FOUC: set theme early from localStorage
+    (function() {
+      try {
+        const t = localStorage.getItem('theme') || 'dark';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="index.html" class="logo">
-      <span class="logo-icon">₿</span>
-      <span class="logo-text">Crypto<span>Watch</span></span>
-    </a>
-
-    <nav class="main-nav">
-      <a href="#crypto-section" data-i18n="nav_cryptos">Криптовалюты</a>
-      <a href="#charts-section" data-i18n="nav_charts">Графики</a>
-      <a href="#news-section" data-i18n="nav_news">Новости</a>
-      <a href="#" data-i18n="nav_portfolio">Портфель</a>
-      <a href="#" data-i18n="nav_products">Продукты</a>
-    </nav>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="#" class="logo" aria-label="Home">
+        <span class="logo-mark">₿</span>
+        <span class="logo-text">CryptoHub</span>
+      </a>
+      <nav class="main-nav" aria-label="Primary">
+        <button class="nav-btn active" data-view="market" id="navMarket">Рынок</button>
+        <button class="nav-btn" data-view="watchlist" id="navWatchlist">Избранное</button>
+        <button class="nav-btn" data-view="heatmap" id="navHeatmap">Теплокарта</button>
+        <button class="nav-btn" data-view="global" id="navGlobal">Глобально</button>
+      </nav>
+    </div>
 
     <div class="header-right">
-      <div class="search-bar">
-        <span class="search-icon">🔍</span>
-        <input id="globalSearch" type="text" data-i18n-placeholder="search_placeholder" placeholder="Поиск по монетам..." />
+      <div class="search-wrap">
+        <input type="search" id="searchInput" placeholder="Поиск монеты..." aria-label="Search coins" autocomplete="off" />
+        <button id="clearSearch" title="Очистить">✕</button>
       </div>
 
-      <div class="lang-dropdown" id="langDropdown">
-        <button class="lang-toggle" id="langToggle">
-          🌐 <span id="currentLangLabel">RU</span> ▾
-        </button>
-        <div class="lang-menu" id="langMenu">
-          <button data-lang="ru">Русский</button>
-          <button data-lang="en">English</button>
+      <div class="filters-wrap">
+        <select id="currencySelect" aria-label="Currency">
+          <option value="usd">USD</option>
+          <option value="eur">EUR</option>
+          <option value="rub">RUB</option>
+          <option value="uah">UAH</option>
+          <option value="ron">RON</option>
+        </select>
+        <select id="perPageSelect" aria-label="Per page">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+        </select>
+        <select id="sortSelect" aria-label="Sort">
+          <option value="market_cap_desc" selected>Капитализация ↓</option>
+          <option value="market_cap_asc">Капитализация ↑</option>
+          <option value="volume_desc">Объем ↓</option>
+          <option value="volume_asc">Объем ↑</option>
+          <option value="price_desc">Цена ↓</option>
+          <option value="price_asc">Цена ↑</option>
+          <option value="change_24h_desc">% 24ч ↓</option>
+          <option value="change_24h_asc">% 24ч ↑</option>
+        </select>
+      </div>
+
+      <div class="toggles-wrap">
+        <button id="themeToggle" class="toggle-btn" title="Переключить тему">🌓</button>
+        <button id="langToggle" class="toggle-btn" title="Switch language">RU</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subheader: global stats -->
+  <section class="subheader">
+    <div class="global-stat" id="globalMcap">
+      <span class="label">Глобальная капитализация:</span>
+      <span class="value">—</span>
+    </div>
+    <div class="global-stat" id="globalVolume">
+      <span class="label">Общий объем 24ч:</span>
+      <span class="value">—</span>
+    </div>
+    <div class="global-stat" id="btcDominance">
+      <span class="label">Доминантность BTC:</span>
+      <span class="value">—</span>
+    </div>
+    <div class="global-stat" id="marketTrend">
+      <span class="label">Тренд рынка:</span>
+      <span class="value trend-pill">—</span>
+    </div>
+    <div class="subheader-right">
+      <button id="refreshBtn" class="refresh-btn">Обновить</button>
+      <span class="last-updated" id="lastUpdated">—</span>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <main class="app-main">
+    <!-- Market view -->
+    <section id="marketView" class="view active" aria-labelledby="navMarket">
+      <div class="table-wrap">
+        <table class="coins-table" aria-describedby="marketInfo">
+          <caption id="marketInfo">Рынок криптовалют. Кликайте на монеты для подробностей и графика.</caption>
+          <thead>
+            <tr>
+              <th class="sticky-col">#</th>
+              <th class="sticky-col">Монета</th>
+              <th>Цена</th>
+              <th>Изм. 24ч</th>
+              <th>Капитализация</th>
+              <th>Объем 24ч</th>
+              <th>Оборот</th>
+              <th>Линия</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="coinsTbody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button id="prevPage" class="page-btn">←</button>
+        <span id="pageIndicator">Page 1</span>
+        <button id="nextPage" class="page-btn">→</button>
+      </div>
+    </section>
+
+    <!-- Watchlist view -->
+    <section id="watchlistView" class="view" aria-labelledby="navWatchlist">
+      <div class="empty-state" id="watchlistEmpty">Избранное пусто. Добавьте монеты с рынка.</div>
+      <div class="cards-grid" id="watchlistGrid"></div>
+    </section>
+
+    <!-- Heatmap view -->
+    <section id="heatmapView" class="view" aria-labelledby="navHeatmap">
+      <div class="heatmap-legend">
+        <span>24ч % → цвет</span>
+        <span class="legend green">рост</span>
+        <span class="legend red">падение</span>
+      </div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+    </section>
+
+    <!-- Global view -->
+    <section id="globalView" class="view" aria-labelledby="navGlobal">
+      <div class="global-cards">
+        <div class="global-card">
+          <h3>Глобальные метрики</h3>
+          <ul id="globalMetrics">
+            <!-- Filled by JS -->
+          </ul>
+        </div>
+        <div class="global-card">
+          <h3>Трекер доминантности</h3>
+          <div id="dominanceBars" class="dominance-bars">
+            <!-- Bars -->
+          </div>
+        </div>
+        <div class="global-card">
+          <h3>Топ по объему</h3>
+          <ol id="topVolumeList">
+            <!-- List -->
+          </ol>
         </div>
       </div>
+    </section>
+  </main>
 
-      <button class="theme-toggle" id="themeToggle">🌙</button>
+  <!-- Side panel chart -->
+  <aside class="chart-panel" id="chartPanel" aria-live="polite">
+    <div class="chart-header">
+      <div class="chart-coin">
+        <img id="chartCoinIcon" alt="" />
+        <div>
+          <div id="chartCoinName" class="coin-name">—</div>
+          <div id="chartCoinSymbol" class="coin-symbol">—</div>
+        </div>
+      </div>
+      <div class="chart-actions">
+        <button id="chartClose" title="Закрыть панель">✕</button>
+      </div>
+    </div>
+
+    <div class="chart-tabs">
+      <button class="chart-tab active" data-tab="spark">Линия</button>
+      <button class="chart-tab" data-tab="tv-mini">TradingView Mini</button>
+      <button class="chart-tab" data-tab="tv-full">TradingView Full</button>
+      <button class="chart-tab" data-tab="info">Инфо</button>
+    </div>
+
+    <div class="chart-body">
+      <div id="sparkTab" class="chart-tabpane active">
+        <canvas id="sparkCanvas" width="400" height="180"></canvas>
+      </div>
+      <div id="tvMiniTab" class="chart-tabpane">
+        <div id="tvMiniWidget" style="height: 400px;"></div>
+      </div>
+      <div id="tvFullTab" class="chart-tabpane">
+        <div id="tvFullWidget" style="height: 600px;"></div>
+      </div>
+      <div id="infoTab" class="chart-tabpane">
+        <div class="info-grid" id="coinInfoGrid">
+          <!-- Info items -->
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Modal: coin details -->
+  <div id="coinModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="coinModalTitle" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content" role="document">
+      <div class="modal-header">
+        <h2 id="coinModalTitle">Детали монеты</h2>
+        <button id="modalClose" title="Закрыть">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-coin-head">
+          <img id="modalCoinIcon" alt="Coin icon" />
+          <div class="modal-coin-meta">
+            <div class="modal-coin-name" id="modalCoinName">—</div>
+            <div class="modal-coin-symbol" id="modalCoinSymbol">—</div>
+          </div>
+          <button id="modalFavToggle" class="fav-btn">☆</button>
+        </div>
+
+        <div class="modal-sections">
+          <section>
+            <h3>Рыночные данные</h3>
+            <ul class="kv-list" id="modalMarketData"></ul>
+          </section>
+          <section>
+            <h3>Ссылки</h3>
+            <ul class="links-list" id="modalLinksList"></ul>
+          </section>
+          <section>
+            <h3>Описание</h3>
+            <div class="coin-description" id="modalDescription"></div>
+          </section>
+        </div>
+      </div>
     </div>
   </div>
-</header>
 
-<main class="container main-content">
-  <!-- Hero -->
-  <section class="hero">
-    <h1 data-i18n="hero_title">Отслеживайте криптовалюты в реальном времени</h1>
-    <p data-i18n="hero_subtitle">
-      Получайте актуальные данные о ценах, капитализации и объемах торгов для ведущих криптовалют.
-    </p>
-    <div class="hero-actions">
-      <button class="btn-primary" data-i18n="hero_cta_primary">Начать сейчас</button>
-      <button class="btn-secondary" data-i18n="hero_cta_secondary">Узнать больше</button>
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-left">
+      <span>&copy; 2025 CryptoHub. Вдохновлено CoinGecko.</span>
+      <span>Данные: CoinGecko API. Чарты: TradingView.</span>
     </div>
-  </section>
+    <div class="footer-right">
+      <a href="https://www.coingecko.com/en/api/documentation" target="_blank" rel="noopener">CoinGecko API</a>
+      <a href="https://www.tradingview.com/widget/" target="_blank" rel="noopener">TradingView Widgets</a>
+      <a href="https://github.com/" target="_blank" rel="noopener">GitHub Pages</a>
+    </div>
+  </footer>
 
-  <!-- Global stats -->
-  <section class="market-stats" id="market-stats">
-    <div class="stat-card">
-      <h3 data-i18n="stat_market_cap">Рыночная капитализация</h3>
-      <div class="stat-value" id="global-market-cap">—</div>
-      <div class="stat-change" id="global-market-cap-change">—</div>
-    </div>
-    <div class="stat-card">
-      <h3 data-i18n="stat_volume_24h">Объём за 24ч</h3>
-      <div class="stat-value" id="global-volume">—</div>
-      <div class="stat-change" id="global-volume-change">—</div>
-    </div>
-    <div class="stat-card">
-      <h3 data-i18n="stat_btc_dominance">Доминирование BTC</h3>
-      <div class="stat-value" id="btc-dominance">—</div>
-      <div class="stat-change" id="btc-dominance-change">—</div>
-    </div>
-    <div class="stat-card">
-      <h3 data-i18n="stat_market_info">Рынок</h3>
-      <div class="stat-value" id="market-info-label">Crypto</div>
-      <div class="stat-change positive" id="market-info-extra">Paprika API</div>
-    </div>
-  </section>
-
-  <!-- Coins table -->
-  <section class="crypto-section" id="crypto-section">
-    <div class="section-header">
-      <h2 data-i18n="section_cryptos_title">Топ криптовалют</h2>
-      <div class="section-meta">
-        <span data-i18n="section_cryptos_shown_prefix">Показано</span>:
-        <span id="shown-count">0</span>
-        <span data-i18n="section_cryptos_of">из</span>
-        <span id="total-count">0</span>
-      </div>
-    </div>
-
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all" data-i18n="filter_all">Все</button>
-      <button class="filter-btn" data-filter="btceth" data-i18n="filter_btceth">BTC + ETH</button>
-      <button class="filter-btn" data-filter="gainers" data-i18n="filter_gainers">Рост за 24ч</button>
-      <button class="filter-btn" data-filter="losers" data-i18n="filter_losers">Падение за 24ч</button>
-    </div>
-
-    <div class="crypto-table">
-      <table>
-        <thead>
-          <tr>
-            <th data-i18n="th_rank">#</th>
-            <th data-i18n="th_name">Название</th>
-            <th data-i18n="th_price">Цена</th>
-            <th data-i18n="th_change_24h">Изменение 24ч</th>
-            <th data-i18n="th_volume_24h">Объём 24ч</th>
-            <th data-i18n="th_market_cap">Капитализация</th>
-            <th data-i18n="th_7d">7д</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="crypto-table-body">
-          <!-- rows via JS -->
-        </tbody>
-      </table>
-    </div>
-
-    <p class="table-note" data-i18n="table_note">
-      Данные предоставлены CoinPaprika API. Листайте вниз, чтобы загрузить больше монет.
-    </p>
-  </section>
-
-  <!-- Charts -->
-  <section class="charts-section" id="charts-section">
-    <div class="section-header">
-      <h2 data-i18n="section_charts_title">Графики цен</h2>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span data-i18n="chart_btc_title">Bitcoin (BTC)</span>
-          <span class="chart-sub" id="btc-price-label">—</span>
-        </div>
-        <div class="chart-range" id="btc-range-buttons">
-          <button class="chart-btn active" data-range="1" data-i18n="chart_range_1d">24ч</button>
-          <button class="chart-btn" data-range="7" data-i18n="chart_range_7d">7д</button>
-          <button class="chart-btn" data-range="30" data-i18n="chart_range_30d">1м</button>
-          <button class="chart-btn" data-range="90" data-i18n="chart_range_90d">3м</button>
-          <button class="chart-btn" data-range="365" data-i18n="chart_range_365d">1г</button>
-        </div>
-      </div>
-      <div class="chart-body">
-        <canvas id="btcChart"></canvas>
-        <div class="chart-overlay" id="btcChartLoading" data-i18n="chart_loading">Загрузка графика...</div>
-        <div class="chart-overlay error" id="btcChartError"></div>
-      </div>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span data-i18n="chart_eth_title">Ethereum (ETH)</span>
-          <span class="chart-sub" id="eth-price-label">—</span>
-        </div>
-        <div class="chart-range" id="eth-range-buttons">
-          <button class="chart-btn active" data-range="1" data-i18n="chart_range_1d">24ч</button>
-          <button class="chart-btn" data-range="7" data-i18n="chart_range_7d">7д</button>
-          <button class="chart-btn" data-range="30" data-i18n="chart_range_30d">1м</button>
-          <button class="chart-btn" data-range="90" data-i18n="chart_range_90d">3м</button>
-          <button class="chart-btn" data-range="365" data-i18n="chart_range_365d">1г</button>
-        </div>
-      </div>
-      <div class="chart-body">
-        <canvas id="ethChart"></canvas>
-        <div class="chart-overlay" id="ethChartLoading" data-i18n="chart_loading">Загрузка графика...</div>
-        <div class="chart-overlay error" id="ethChartError"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- News -->
-  <section class="news-section" id="news-section">
-    <div class="section-header">
-      <h2 data-i18n="section_news_title">Новости криптовалют</h2>
-      <a href="#" id="newsSourceLink" target="_blank" rel="noopener noreferrer">News API</a>
-    </div>
-    <div class="news-status" id="news-status"></div>
-    <div class="news-grid" id="news-grid"></div>
-  </section>
-</main>
-
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-col">
-      <h3>CryptoWatch</h3>
-      <p data-i18n="footer_about">
-        Платформа для отслеживания криптовалютных рынков в реальном времени.
-      </p>
-    </div>
-    <div class="footer-col">
-      <h4 data-i18n="footer_products">Продукты</h4>
-      <ul>
-        <li><a href="#" data-i18n="footer_exchanges">Биржи</a></li>
-        <li><a href="#" data-i18n="footer_portfolio">Портфель</a></li>
-        <li><a href="#" data-i18n="footer_nft">NFT</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4 data-i18n="footer_company">Компания</h4>
-      <ul>
-        <li><a href="#" data-i18n="footer_about_link">О нас</a></li>
-        <li><a href="#" data-i18n="footer_blog">Блог</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>&copy; 2025 CryptoWatch.</span>
-    <span data-i18n="footer_data_source">Данные: CoinPaprika API, новости: внешний API.</span>
-  </div>
-</footer>
+  <!-- TradingView script -->
+  <script src="https://s3.tradingview.com/tv.js"></script>
+  <!-- App script -->
+  <script src="script.js"></script>
 </body>
 </html>
