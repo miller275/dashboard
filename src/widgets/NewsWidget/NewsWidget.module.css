@@ -1,0 +1,57 @@
+.widget {
+  font-size: 13px;
+}
+
+.header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.item {
+  padding: 6px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-weight: 500;
+}
+
+.meta {
+  font-size: 11px;
+  color: #6b7280;
+  display: flex;
+  gap: 4px;
+}
+
+.chevron {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.button {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+}

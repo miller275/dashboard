@@ -1,0 +1,30 @@
+.switcher {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  background-color: rgba(148, 163, 184, 0.35);
+}
+
+button {
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #020617;
+}
+
+body.dark button {
+  color: #e5e7eb;
+}
+
+.active {
+  background-color: #0f172a;
+  color: #f9fafb;
+}
+
+body.dark .active {
+  background-color: #e5e7eb;
+  color: #020617;
+}
