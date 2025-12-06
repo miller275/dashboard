@@ -1,0 +1,1 @@
+export { cryptoAPI } from './coinGecko';
