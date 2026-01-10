@@ -1,0 +1,12 @@
+{
+  "updatedAt": "2026-01-10T21:00:00Z",
+  "items": [
+    {
+      "title": "Sample: Market overview headline",
+      "url": "https://example.com/news/1",
+      "source": "SampleSource",
+      "publishedAt": "2026-01-10T21:00:00Z",
+      "summary": "This is placeholder news. It will be replaced by GitHub Actions RSS fetch."
+    }
+  ]
+}

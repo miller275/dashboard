@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CryptoBoard — Screener & News</title>
+  <meta name="description" content="Static crypto market screener + news (GitHub Pages). Browser reads only local /data JSON." />
+  <link rel="stylesheet" href="./assets/css/widgets.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">CryptoBoard</div>
+    <div class="tag">Screener + News (no public API calls in browser)</div>
+  </header>
+
+  <main class="container">
+    <!-- SCREENER -->
+    <section id="market-screener" class="section">
+      <div class="section-head">
+        <h2>Market Screener</h2>
+        <div id="screener-meta" class="muted"></div>
+      </div>
+
+      <div class="screener-controls">
+        <input id="scr-q" placeholder="Search (BTC, ETH, Solana)..." autocomplete="off" />
+        <select id="scr-sort" title="Sort">
+          <option value="mcap_desc">Market Cap ↓</option>
+          <option value="vol_desc">Volume 24h ↓</option>
+          <option value="chg24h_desc">24h % ↓</option>
+          <option value="price_desc">Price ↓</option>
+          <option value="rank_asc">Rank ↑</option>
+        </select>
+
+        <input id="scr-min-mcap" type="number" inputmode="numeric" placeholder="Min Mcap ($)" />
+        <input id="scr-min-vol" type="number" inputmode="numeric" placeholder="Min Vol24h ($)" />
+
+        <button id="scr-reset" class="btn">Reset</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="screener-table">
+          <thead>
+            <tr>
+              <th class="col-rank">#</th>
+              <th class="col-coin">Coin</th>
+              <th class="col-price">Price</th>
+              <th class="col-pct">1h%</th>
+              <th class="col-pct">24h%</th>
+              <th class="col-pct">7d%</th>
+              <th class="col-num">Vol24h</th>
+              <th class="col-num">Mcap</th>
+            </tr>
+          </thead>
+          <tbody id="screener-body"></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button id="scr-prev" class="btn">Prev</button>
+        <span id="scr-page" class="pager-label"></span>
+        <button id="scr-next" class="btn">Next</button>
+      </div>
+    </section>
+
+    <!-- NEWS -->
+    <section id="crypto-news" class="section">
+      <div class="section-head">
+        <h2>News</h2>
+        <div id="news-meta" class="muted"></div>
+      </div>
+
+      <div class="news-controls">
+        <input id="news-q" placeholder="Search news..." />
+        <select id="news-source" title="Source">
+          <option value="">All sources</option>
+        </select>
+      </div>
+
+      <div id="news-list" class="news-list"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="muted">Data is updated by GitHub Actions and committed into <code>/data</code>.</span>
+  </footer>
+
+  <script type="module" src="./assets/js/pages/index.widgets.js"></script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+/* Minimal “dense but clean” styling for screener + news */
+:root{
+  --bg:#0b0f19;
+  --panel:#0f1628;
+  --text:#e7ecff;
+  --muted:#9aa6c6;
+  --line:rgba(255,255,255,.08);
+  --soft:rgba(255,255,255,.06);
+  --chip:rgba(255,255,255,.09);
+  --radius:14px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--sans);
+  background: radial-gradient(1200px 800px at 10% 0%, rgba(116,143,255,.12), transparent 55%),
+              radial-gradient(1000px 700px at 90% 10%, rgba(255,123,176,.10), transparent 60%),
+              var(--bg);
+  color:var(--text);
+}
+
+a{color:inherit}
+code{font-family:var(--mono); font-size:.92em}
+
+.topbar{
+  position:sticky; top:0;
+  backdrop-filter:saturate(1.2) blur(10px);
+  background:rgba(11,15,25,.75);
+  border-bottom:1px solid var(--line);
+  padding:14px 16px;
+  display:flex; align-items:center; gap:12px;
+  z-index:10;
+}
+.brand{font-weight:800; letter-spacing:.2px}
+.tag{color:var(--muted); font-size:13px}
+
+.container{max-width:1100px; margin:0 auto; padding:18px 14px 34px}
+.section{margin:18px 0 26px}
+.section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:10px}
+.section h2{margin:0; font-size:18px}
+.muted{color:var(--muted); font-size:13px}
+.footer{border-top:1px solid var(--line); padding:18px 14px; text-align:center}
+
+.screener-controls, .news-controls{
+  display:flex; flex-wrap:wrap; gap:10px;
+  padding:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+}
+
+input, select{
+  height:36px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--line);
+  border-radius:12px;
+  color:var(--text);
+  padding:0 10px;
+  outline:none;
+}
+input::placeholder{color:rgba(154,166,198,.72)}
+select{padding-right:28px}
+
+.btn{
+  height:36px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  padding:0 12px;
+  cursor:pointer;
+}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+
+.table-wrap{
+  margin-top:10px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:auto;
+  background:rgba(255,255,255,.02);
+}
+
+.screener-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:860px;
+}
+.screener-table thead th{
+  position:sticky; top:0;
+  background:rgba(11,15,25,.86);
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+  letter-spacing:.2px;
+  text-transform:uppercase;
+  color:var(--muted);
+  padding:10px 10px;
+  text-align:right;
+  white-space:nowrap;
+}
+.screener-table thead th.col-coin{text-align:left}
+.screener-table tbody td{
+  border-bottom:1px solid var(--soft);
+  padding:9px 10px;
+  font-size:13px;
+  text-align:right;
+  white-space:nowrap;
+}
+.screener-table tbody td:nth-child(2){text-align:left}
+.screener-table tbody tr:hover{background:rgba(255,255,255,.04)}
+.screener-table tbody a{
+  text-decoration:none;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+}
+
+.pager{
+  margin-top:10px;
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
+}
+.pager-label{color:var(--muted); font-size:13px}
+
+.news-list{
+  margin-top:10px;
+  display:grid;
+  gap:10px;
+}
+.news-item{
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  padding:12px 12px;
+}
+.news-title{
+  display:block;
+  font-weight:700;
+  text-decoration:none;
+  line-height:1.25;
+}
+.news-sub{margin-top:6px}
+.news-summary{margin-top:8px; color:rgba(231,236,255,.86); font-size:13px; line-height:1.35}
+
+@media (max-width:680px){
+  .section-head{align-items:flex-start; flex-direction:column}
+  .screener-controls input{flex:1 1 180px}
+  .news-controls input{flex:1 1 220px}
+}

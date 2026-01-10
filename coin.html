@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Coin</title>
+  <link rel="stylesheet" href="./assets/css/widgets.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="./index.html" class="brand" style="text-decoration:none">← Back</a>
+    <div class="tag">Stub coin page (replace with your PRO coin.html)</div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <h2 id="title">Coin</h2>
+      <p class="muted">This archive focuses on Screener + News widgets. Hook this link to your existing coin.html routing.</p>
+      <div class="news-item">
+        <div class="muted">Query params:</div>
+        <pre id="qp" style="white-space:pre-wrap; margin:8px 0 0"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const qp = Object.fromEntries(new URLSearchParams(location.search).entries());
+    document.querySelector('#qp').textContent = JSON.stringify(qp, null, 2);
+    document.querySelector('#title').textContent = qp.id ? `Coin ID: ${qp.id}` : 'Coin';
+  </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "updatedAt": "2026-01-10T21:00:00Z",
+  "page": 1,
+  "pageSize": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "slug": "bitcoin",
+      "rank": 1,
+      "price": 95000.12,
+      "mcap": 1870000000000,
+      "vol24h": 31000000000,
+      "chg1h": 0.2,
+      "chg24h": -1.1,
+      "chg7d": 4.7
+    },
+    {
+      "id": 1027,
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "slug": "ethereum",
+      "rank": 2,
+      "price": 5200.45,
+      "mcap": 620000000000,
+      "vol24h": 18000000000,
+      "chg1h": -0.1,
+      "chg24h": 0.8,
+      "chg7d": 2.3
+    },
+    {
+      "id": 825,
+      "name": "Tether",
+      "symbol": "USDT",
+      "slug": "tether",
+      "rank": 3,
+      "price": 1.0001,
+      "mcap": 110000000000,
+      "vol24h": 56000000000,
+      "chg1h": 0.0,
+      "chg24h": 0.01,
+      "chg7d": -0.02
+    }
+  ]
+}
